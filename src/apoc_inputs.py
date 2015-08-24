@@ -4,9 +4,7 @@ import luigi
 import os
 import urllib
 
-WORKING_DIR = "/ddnB/work/jaydy/working/xcms"
-DAT_DIR = "/home/jaydy/Workspace/Bitbucket/xcms/dat"
-
+from urls import WORKING_DIR, DAT_DIR
 
 class PdbPathTask(luigi.Task):
 
