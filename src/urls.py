@@ -1,2 +1,5 @@
 WORKING_DIR = "/ddnB/work/jaydy/working/xcms"
 DAT_DIR = "/home/jaydy/Workspace/Bitbucket/xcms/dat"
+LPC_DIR = "/ddnB/work/jaydy/dat/apoc/apoc_bench_set/lpc"
+APOC_WORKING_DIR = "/ddnB/work/jaydy/working/xcms/apoc"
+APOC_BIN = "/home/jaydy/Workspace/Bitbucket/apoc/bin/apoc"
