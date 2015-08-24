@@ -1,0 +1,20 @@
+* eXtended Contact Mode Score (xCMS)
+Extend the application of Contact Mode Score to non-identical complexes
+
+** Methods
+1. Contact Matrix
+   1. Corresponding residues of two binding pockets
+      1. APoc
+   2. Corresponding heavy atoms of two ligands
+      1. Kcombu
+      2. SIMCOMP (used in Apoc paper)
+
+** Script
+1. script
+   ./src/apoc_inputs.py
+2. The pipeline
+   #+BEGIN_SRC sh
+     apoc prt1.pdb prt2.pdb | parsing_apc.py > matching_residues.txt
+     kcombu lig1.sdf lig2.sdf | parsing_kcombu.py > matching_ligand_heavy_atoms.txt
+     xCms -r matching_residues.txt -l matching_ligand_heavy_atoms.txt
+   #+END_SRC
