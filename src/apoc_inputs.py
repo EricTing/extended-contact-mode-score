@@ -4,6 +4,9 @@ import luigi
 import os
 import urllib
 
+WORKING_DIR = "/ddnB/work/jaydy/working/xcms"
+DAT_DIR = "/home/jaydy/Workspace/Bitbucket/xcms/dat"
+
 
 class PdbPathTask(luigi.Task):
 
@@ -30,7 +33,7 @@ class ApocListPathTask(luigi.Task):
     subset = luigi.Parameter()
 
     def output(self):
-        subset_lst_path = "../dat/%s.lst" % self.subset
+        subset_lst_path = "%s/%s.lst" % (DAT_DIR, self.subset)
         return luigi.LocalTarget(subset_lst_path)
 
 
@@ -50,7 +53,9 @@ class BuildInputs4ApocPipeline(luigi.Task):
         return ids
 
     def output(self):
-        return luigi.LocalTarget("../dat/%s_apoc_inputs.txt" % self.subset)
+        output_path = os.path.join(WORKING_DIR,
+                                   "%s_apoc_inputs.txt" % self.subset)
+        return luigi.LocalTarget(output_path)
 
     def requires(self):
         return ApocListPathTask(self.subset), \
