@@ -37,12 +37,12 @@ class ApocListPathTask(luigi.Task):
         return luigi.LocalTarget(subset_lst_path)
 
 
-class BuildInputs4ApocPipeline(luigi.Task):
-    subset = luigi.Parameter(default="control")
+class ApocPdbPathsTask(luigi.Task):
 
     def pdb_ids(self):
+
         ids = []
-        with ApocListPathTask(self.subset).output().open('r') as lst_f:
+        with ApocListPathTask("subject").output().open('r') as lst_f:
             for line in lst_f:
                 if 'tname' not in line:
                     tname, qname = line.split()
@@ -50,31 +50,34 @@ class BuildInputs4ApocPipeline(luigi.Task):
                     qpdb = qname.split('_')[0]
                     ids.append(tpdb)
                     ids.append(qpdb)
-        return ids
+        with ApocListPathTask("control").output().open('r') as lst_f:
+            for line in lst_f:
+                if 'tname' not in line:
+                    tname, qname = line.split()
+                    tpdb = tname.split('_')[0]
+                    qpdb = qname.split('_')[0]
+                    ids.append(tpdb)
+                    ids.append(qpdb)
+        ids = set(ids)
+        return list(ids)
 
     def output(self):
         output_path = os.path.join(WORKING_DIR,
-                                   "%s_apoc_inputs.txt" % self.subset)
+                                   "apoc_pdbs_paths.txt")
         return luigi.LocalTarget(output_path)
 
     def requires(self):
-        return ApocListPathTask(self.subset), \
+        return ApocListPathTask("subject"), ApocListPathTask("control"),\
             [PdbPathTask(pdb_id) for pdb_id in self.pdb_ids()]
 
     def run(self):
-        with ApocListPathTask(self.subset).output().open('r') as lst_f:
-            with self.output().open('w') as apoc_inputs_f:
-                for line in lst_f:
-                    if 'tname' not in line:
-                        tname, qname = line.split()
-                        tpdb = tname.split('_')[0]
-                        qpdb = qname.split('_')[0]
-                        tpdb_path = PdbPathTask(tpdb).output().path
-                        qpdb_path = PdbPathTask(qpdb).output().path
-                        apoc_inputs_f.write("%s %s\n" % (tpdb_path, qpdb_path))
+        paths = [PdbPathTask(pdb_id).output().path
+                 for pdb_id in self.pdb_ids()]
+        with self.output().open('w') as f:
+            for path in paths:
+                f.write(path + "\n")
 
 
 if __name__ == '__main__':
-    luigi.build([BuildInputs4ApocPipeline("control"),
-                 BuildInputs4ApocPipeline("subject")],
+    luigi.build([ApocPdbPathsTask()],
                 local_scheduler=True)
