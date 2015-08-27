@@ -28,6 +28,49 @@ class LpcPocketPathTask(luigi.Task):
         return luigi.LocalTarget(self.mypath())
 
 
+class Data:
+    pass
+
+
+class ApocResultParer:
+
+    def __init__(self, result):
+        '''
+        result: str of list of strs
+        '''
+        self.result = result.splitlines(False)
+        self.global_property = Data()
+        self.pocket_property = Data()
+        self.matching_list = []
+
+        global_idx, pocket_idx = 0, 0
+        for idx, line in enumerate(self.result):
+            if "Global alignment" in line:
+                global_idx = idx
+            if "Pocket alignment" in line:
+                pocket_idx = idx
+
+        for idx, line in enumerate(self.result):
+            if idx > global_idx and idx < pocket_idx:
+                if "TM-score" in line:
+                    self.global_property.tm_score = float(line.split()[-1])
+                if "RMSD" in line and "Seq identity" in line:
+                    self.global_property.rmsd = float(line.split(',')[0].split()[-1])
+                    self.global_property.seq_identity  = float(line.split(',')[-1].split()[-1])
+            if idx > pocket_idx:
+                if "TM-score" in line:
+                    self.pocket_property.tm_score = float(line.split()[-1])
+                if "RMSD" in line and "Seq identity" in line:
+                    self.pocket_property.rmsd = float(line.split(',')[0].split()[-1])
+                    self.pocket_property.seq_identity  = float(line.split(',')[-1].split()[-1])
+                if "PS-score" in line:
+                    self.pocket_property.ps_score = float(line.split(',')[0].split()[-1])
+                if "*" in line and "*" == line[-1] and "******" not in line:
+                    tokens = line.split()
+                    self.matching_list.append((" ".join(tokens[1:4]),
+                                               " ".join(tokens[4:7])))
+
+
 class LpcApocResultTask(luigi.Task):
 
     tname = luigi.Parameter()
@@ -57,12 +100,16 @@ class LpcApocResultTask(luigi.Task):
         return [LpcPocketPathTask(self.convert(self.tname)),
                 LpcPocketPathTask(self.convert(self.qname))]
 
-    def run(self):
+    def run_apoc(self):
         subprocess32.call(["mkdir", "-p", self.mydir()])
         paths = [_.output().path for _ in self.requires()]
         cmd = [APOC_BIN] + paths
         print " ".join(cmd)
         stdout = subprocess32.check_output(cmd)
+        return stdout
+
+    def run(self):
+        stdout = self.run_apoc()
         with self.output().open('w') as f:
             f.write(stdout)
 
