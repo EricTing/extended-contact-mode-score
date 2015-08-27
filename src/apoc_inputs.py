@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import luigi
+import gzip
 import os
 import urllib
 
-from urls import WORKING_DIR, DAT_DIR
+from urls import WORKING_DIR, DAT_DIR, APOC_WORKING_DIR
+
 
 class PdbPathTask(luigi.Task):
 
@@ -24,6 +26,34 @@ class PdbPathTask(luigi.Task):
         print "downloading %s from protein data bank" % self.pdb_id
         url = "http://www.rcsb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId=%s" % self.pdb_id
         urllib.urlretrieve(url, self.mypath())
+
+
+class LigandExpStructureInPdb(luigi.Task):
+
+    pdb_id = luigi.Parameter()
+    lig_id = luigi.Parameter()
+    chain_id = luigi.Parameter()
+
+    def output(self):
+        mid_two = self.pdb_id[1:3]
+        path = os.path.join(APOC_WORKING_DIR,
+                            mid_two,
+                            "%s_%s_%s.pdb" % (self.pdb_id,
+                                              self.lig_id,
+                                              self.chain_id))
+        return luigi.LocalTarget(path)
+
+    def requires(self):
+        return PdbPathTask(self.pdb_id)
+
+    def run(self):
+        with gzip.open(self.requires().output().path, 'rb') as f:
+            content = f.read()
+        ligand_line_mark = self.lig_id + " " + self.chain_id
+        with self.output().open('w') as f:
+            for line in content.splitlines():
+                if ligand_line_mark in line:
+                    f.write(line + "\n")
 
 
 class ApocListPathTask(luigi.Task):
@@ -77,5 +107,8 @@ class ApocPdbPathsTask(luigi.Task):
 
 
 if __name__ == '__main__':
-    luigi.build([ApocPdbPathsTask()],
+    # luigi.build([ApocPdbPathsTask()],
+    #             local_scheduler=True)
+    luigi.build([LigandExpStructureInPdb('104m', 'NBN', 'A'),
+                 LigandExpStructureInPdb('1m8e', '7NI', 'A')],
                 local_scheduler=True)

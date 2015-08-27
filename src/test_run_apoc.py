@@ -1,6 +1,6 @@
 import luigi
 import unittest
-from run_apoc import ApocResultParer, LpcApocResultTask
+from run_apoc import ApocResultParer, LpcApocResultTask, LpcKcombuResult
 from my_pdb import buildSelect
 from Bio.PDB import PDBParser, PDBIO
 
@@ -42,6 +42,10 @@ class Test(unittest.TestCase):
         io.save("test.pdb", selected())
 
         f.close()
+
+    def test_c_kcombu(self):
+        luigi.build([LpcKcombuResult('104m_NBN_A_156', '1m8e_7NI_A_906')],
+                    local_scheduler=True)
 
 
 if __name__ == "__main__":
