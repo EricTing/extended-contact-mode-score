@@ -67,8 +67,8 @@ class ApocResultParer:
                     self.pocket_property.ps_score = float(line.split(',')[0].split()[-1])
                 if "*" in line and "*" == line[-1] and "******" not in line:
                     tokens = line.split()
-                    self.matching_list.append((" ".join(tokens[1:4]),
-                                               " ".join(tokens[4:7])))
+                    self.matching_list.append([[tokens[1], int(tokens[2])],
+                                               [tokens[4], int(tokens[5])]])
 
 
 class LpcApocResultTask(luigi.Task):

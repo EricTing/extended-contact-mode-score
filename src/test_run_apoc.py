@@ -1,7 +1,8 @@
 import luigi
-import os
 import unittest
 from run_apoc import ApocResultParer, LpcApocResultTask
+from my_pdb import buildSelect
+from Bio.PDB import PDBParser, PDBIO
 
 
 class Test(unittest.TestCase):
@@ -22,8 +23,25 @@ class Test(unittest.TestCase):
             self.assertEqual(1.87, parser.pocket_property.rmsd)
             self.assertEqual(0.125, parser.pocket_property.seq_identity)
             self.assertEqual(0.29410, parser.pocket_property.ps_score)
-            self.assertSequenceEqual(("A 187 G", "A 50 G"),
+            self.assertSequenceEqual([["A", 187], ["A", 50]],
                                      parser.matching_list[0])
+
+    def test_b_buildSelect(self):
+        pdb_parser = PDBParser(QUIET=True)
+
+        t_ifn = "../dat/pdb3sis.ent"
+        t_structure = pdb_parser.get_structure('t', t_ifn)
+
+        io = PDBIO()
+        io.set_structure(t_structure)
+
+        f = self.task.output().open('r')
+        parser = ApocResultParer(f.read())
+        selected_residues = [_[0] for _ in parser.matching_list]
+        selected = buildSelect(selected_residues)
+        io.save("test.pdb", selected())
+
+        f.close()
 
 
 if __name__ == "__main__":
