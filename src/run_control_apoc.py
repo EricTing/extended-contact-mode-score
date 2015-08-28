@@ -46,6 +46,9 @@ class ApocResultParer:
         self.global_property = Data()
         self.pocket_property = Data()
         self.matching_list = []
+        self.pocket_property.template_res = []
+        self.pocket_property.query_res = []
+        self.pocket_property.has_alignment = False
 
         global_idx, pocket_idx = 0, 0
         for idx, line in enumerate(self.result):
@@ -54,6 +57,11 @@ class ApocResultParer:
             if "Pocket alignment" in line:
                 pocket_idx = idx
 
+        if pocket_idx == 0:
+            self.pocket_property.has_alignment = False
+        else:
+            self.pocket_property.has_alignment = True
+
         for idx, line in enumerate(self.result):
             if idx > global_idx and idx < pocket_idx:
                 if "TM-score" in line:
@@ -61,7 +69,7 @@ class ApocResultParer:
                 if "RMSD" in line and "Seq identity" in line:
                     self.global_property.rmsd = float(line.split(',')[0].split()[-1])
                     self.global_property.seq_identity  = float(line.split(',')[-1].split()[-1])
-            if idx > pocket_idx:
+            if idx > pocket_idx and self.pocket_property.has_alignment is True:
                 if "TM-score" in line:
                     self.pocket_property.tm_score = float(line.split()[-1])
                 if "RMSD" in line and "Seq identity" in line:
@@ -73,6 +81,12 @@ class ApocResultParer:
                     tokens = line.split()
                     self.matching_list.append([[tokens[1], int(tokens[2])],
                                                [tokens[4], int(tokens[5])]])
+
+                    self.pocket_property.template_chainid = tokens[1]
+                    self.pocket_property.query_chainid = tokens[4]
+
+                    self.pocket_property.template_res.append(int(tokens[2]))
+                    self.pocket_property.query_res.append(int(tokens[5]))
 
 
 class LpcKcombuResult(luigi.Task):

@@ -59,8 +59,10 @@ class Test(unittest.TestCase):
         luigi.build([LpcPocketPathTask('4ej7_ATP_C_401')],
                     local_scheduler=True)
 
-    def test_f_pocket(self):
-        luigi.build([LpcApocXcms('3vn9_ANK_A_401', '4ej7_ATP_C_401')],
+    def test_f_xcms(self):
+        luigi.build([LpcApocXcms('3vn9_ANK_A_401', '4ej7_ATP_C_401'),
+                     LpcApocXcms('3v76_FDA_A_547', '3zxs_FAD_A_1509'),
+                     LpcApocXcms('4a2a_ATP_B_1391', '4a5a_ANP_A_700')],
                     local_scheduler=True)
 
 if __name__ == "__main__":
