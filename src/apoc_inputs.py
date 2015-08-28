@@ -28,6 +28,27 @@ class PdbPathTask(luigi.Task):
         urllib.urlretrieve(url, self.mypath())
 
 
+class DecompressedPdb(luigi.Task):
+
+    pdb_id = luigi.Parameter()
+
+    def requires(self):
+        return PdbPathTask(self.pdb_id)
+
+    def output(self):
+        mid_two = self.pdb_id[1:3]
+        pdb_path = os.path.join("/ddnB/work/jaydy/dat/pdb",
+                                mid_two,
+                                "pdb%s.ent" % self.pdb_id)
+        return luigi.LocalTarget(pdb_path)
+
+    def run(self):
+        with gzip.open(self.requires().output().path, 'rb') as f:
+            file_content = f.read()
+            with self.output().open('w') as of:
+                of.write(file_content)
+
+
 class LigandExpStructureInPdb(luigi.Task):
 
     pdb_id = luigi.Parameter()

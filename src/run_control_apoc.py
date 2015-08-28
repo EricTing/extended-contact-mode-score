@@ -20,9 +20,11 @@ class LpcPocketPathTask(luigi.Task):
     target_id = luigi.Parameter()
 
     def mypath(self):
-        mid_two = self.target_id[1:3]
+        tokens = self.target_id.split('_')
+        pdb_id = tokens[0]
+        mid_two = pdb_id[1:3]
         pdb_path = os.path.join(LPC_DIR, mid_two,
-                                self.target_id[:-1], self.target_id + '.pdb')
+                                pdb_id, pdb_id + tokens[-1] + '.pdb')
         return pdb_path
 
     def output(self):
@@ -76,7 +78,7 @@ class LpcKcombuResult(luigi.Task):
 
     tname = luigi.Parameter()
     qname = luigi.Parameter()
-    subset = luigi.Parameter()
+    subset = luigi.Parameter(default="subject")
 
     def my_midtwo(self):
         return self.tname[1:3]
@@ -125,7 +127,7 @@ class LpcApocResultTask(luigi.Task):
 
     tname = luigi.Parameter()
     qname = luigi.Parameter()
-    subset = luigi.Parameter()
+    subset = luigi.Parameter(default="subject")
 
     def my_midtwo(self):
         return self.tname[1:3]
@@ -149,8 +151,8 @@ class LpcApocResultTask(luigi.Task):
         return tokens[0] + tokens[2]
 
     def requires(self):
-        return [LpcPocketPathTask(self.convert(self.tname)),
-                LpcPocketPathTask(self.convert(self.qname))]
+        return [LpcPocketPathTask(self.tname),
+                LpcPocketPathTask(self.qname)]
 
     def run_apoc(self):
         subprocess32.call(["mkdir", "-p", self.mydir()])

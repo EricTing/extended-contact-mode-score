@@ -1,7 +1,10 @@
 import luigi
 import unittest
-from run_apoc import ApocResultParer, LpcApocResultTask, LpcKcombuResult
+from run_control_apoc import ApocResultParer, LpcApocResultTask
+from run_control_apoc import LpcKcombuResult, LpcPocketPathTask
+from apoc_inputs import DecompressedPdb
 from my_pdb import buildSelect
+from xcms import LpcApocXcms
 from Bio.PDB import PDBParser, PDBIO
 
 
@@ -45,6 +48,14 @@ class Test(unittest.TestCase):
 
     def test_c_kcombu(self):
         luigi.build([LpcKcombuResult('104m_NBN_A_156', '1m8e_7NI_A_906')],
+                    local_scheduler=True)
+
+    def test_d_pdb(self):
+        luigi.build([DecompressedPdb('104m')],
+                    local_scheduler=True)
+
+    def test_e_pocket(self):
+        luigi.build([LpcPocketPathTask('104m_NBN_A_156')],
                     local_scheduler=True)
 
 
