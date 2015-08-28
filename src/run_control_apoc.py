@@ -76,18 +76,20 @@ class LpcKcombuResult(luigi.Task):
 
     tname = luigi.Parameter()
     qname = luigi.Parameter()
+    subset = luigi.Parameter()
 
     def my_midtwo(self):
         return self.tname[1:3]
 
     def mydir(self):
         dir_path = os.path.join(APOC_WORKING_DIR,
+                                self.subset,
                                 self.my_midtwo())
         return dir_path
 
     def mypath(self):
         path = os.path.join(self.mydir(),
-                            self.tname + "__" + self.qname + ".oam")
+                            self.tname + "__" + self.qname + ".sdf")
         return path
 
     def output(self):
@@ -105,16 +107,15 @@ class LpcKcombuResult(luigi.Task):
 
     def _run_kcombu(self):
         inputs = [_.output().path for _ in self.requires()]
-        args = [KCOMBU_BIN,
+        cmds = [KCOMBU_BIN,
                 "-A", inputs[0],
                 "-B", inputs[1],
-                "-oam", self.output().path]
-        output = "No Matches!\n"
+                "-omcs", self.output().path]
         try:
-            output = subprocess32.check_output(args)
+            subprocess32.call(["mkdir", "-p", self.mydir()])
+            subprocess32.call(cmds)
         except:
-            with self.output().open('w') as f:
-                f.write(output)
+            pass
 
     def run(self):
         self._run_kcombu()
@@ -124,12 +125,14 @@ class LpcApocResultTask(luigi.Task):
 
     tname = luigi.Parameter()
     qname = luigi.Parameter()
+    subset = luigi.Parameter()
 
     def my_midtwo(self):
         return self.tname[1:3]
 
     def mydir(self):
         dir_path = os.path.join(APOC_WORKING_DIR,
+                                self.subset,
                                 self.my_midtwo())
         return dir_path
 
@@ -167,6 +170,7 @@ if __name__ == "__main__":
     import sys
     tname, qname = sys.argv[1], sys.argv[2]
     if tname != "tname":
-        luigi.build([LpcApocResultTask(tname, qname),
-                     LpcKcombuResult(tname, qname)],
+        luigi.build([LpcApocResultTask(tname, qname, "control"),
+                     LpcKcombuResult(qname, tname, "control"),
+                     LpcKcombuResult(tname, qname, "control")],
                     local_scheduler=True)
