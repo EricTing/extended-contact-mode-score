@@ -24,7 +24,8 @@ class LpcPocketPathTask(luigi.Task):
         pdb_id = tokens[0]
         mid_two = pdb_id[1:3]
         pdb_path = os.path.join(LPC_DIR, mid_two,
-                                pdb_id, pdb_id + tokens[-1] + '.pdb')
+                                pdb_id, pdb_id + tokens[-2] + '.pdb')
+        assert os.path.exists(pdb_path), "%s does not exist" % pdb_path
         return pdb_path
 
     def output(self):

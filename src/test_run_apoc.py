@@ -12,7 +12,6 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.task = LpcApocResultTask("3sis_MN0_A_6535", "10gs_VWW_A_210")
-        print self.task.output().path
         luigi.build([self.task],
                     local_scheduler=True)
 
@@ -55,9 +54,14 @@ class Test(unittest.TestCase):
                     local_scheduler=True)
 
     def test_e_pocket(self):
-        luigi.build([LpcPocketPathTask('104m_NBN_A_156')],
+        luigi.build([LpcPocketPathTask('3vn9_ANK_A_401')],
+                    local_scheduler=True)
+        luigi.build([LpcPocketPathTask('4ej7_ATP_C_401')],
                     local_scheduler=True)
 
+    def test_f_pocket(self):
+        luigi.build([LpcApocXcms('3vn9_ANK_A_401', '4ej7_ATP_C_401')],
+                    local_scheduler=True)
 
 if __name__ == "__main__":
     unittest.main()
