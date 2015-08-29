@@ -3,6 +3,7 @@
 import luigi
 import subprocess32
 import os
+import re
 from urls import LPC_DIR, APOC_WORKING_DIR, APOC_BIN, KCOMBU_BIN
 from apoc_inputs import LigandExpStructureInPdb
 
@@ -38,55 +39,79 @@ class Data:
 
 class ApocResultParer:
 
-    def __init__(self, result):
-        '''
-        result: str of list of strs
-        '''
-        self.result = result.splitlines(False)
-        self.global_property = Data()
-        self.pocket_property = Data()
-        self.matching_list = []
-        self.pocket_property.template_res = []
-        self.pocket_property.query_res = []
-        self.pocket_property.has_alignment = False
+    def __init__(self, content):
+        self._content = content
+        self.has_pocket_alignment = False
 
-        global_idx, pocket_idx = 0, 0
-        for idx, line in enumerate(self.result):
-            if "Global alignment" in line:
-                global_idx = idx
-            if "Pocket alignment" in line:
-                pocket_idx = idx
+        self.global_sections = re.findall(r'''>>>>>>>>>>>>>>>>>>>>>>>>>   Global alignment   <<<<<<<<<<<<<<<<<<<<<<<<<<(.*?)seconds''',
+                                          content,
+                                          re.DOTALL)
 
-        if pocket_idx == 0:
-            self.pocket_property.has_alignment = False
-        else:
-            self.pocket_property.has_alignment = True
+        self.pocket_sections = re.findall(r'''>>>>>>>>>>>>>>>>>>>>>>>>>   Pocket alignment   <<<<<<<<<<<<<<<<<<<<<<<<<<(.*?)seconds''',
+                                          content,
+                                          re.DOTALL)
 
-        for idx, line in enumerate(self.result):
-            if idx > global_idx and idx < pocket_idx:
+        if len(self.pocket_sections) > 0:
+            self.has_pocket_alignment = True
+
+        self._read_global()
+        self._read_pocket()
+
+    def getContent(self):
+        return self._content
+
+    def _read_global(self):
+        self.global_alignments = {}
+        for string in self.global_sections:
+            data = Data()
+            for line in string.splitlines():
+                if "Structure 1" in line:
+                    data.structure_1 = line.split()[2].split('.')[0]
+                if "Structure 2" in line:
+                    data.structure_2 = line.split()[2].split('.')[0]
                 if "TM-score" in line:
-                    self.global_property.tm_score = float(line.split()[-1])
+                    data.tm_score = float(line.split()[-1])
                 if "RMSD" in line and "Seq identity" in line:
-                    self.global_property.rmsd = float(line.split(',')[0].split()[-1])
-                    self.global_property.seq_identity  = float(line.split(',')[-1].split()[-1])
-            if idx > pocket_idx and self.pocket_property.has_alignment is True:
-                if "TM-score" in line:
-                    self.pocket_property.tm_score = float(line.split()[-1])
-                if "RMSD" in line and "Seq identity" in line:
-                    self.pocket_property.rmsd = float(line.split(',')[0].split()[-1])
-                    self.pocket_property.seq_identity  = float(line.split(',')[-1].split()[-1])
+                    data.rmsd = float(line.split(',')[0].split()[-1])
+                    data.seq_identity = float(line.split(',')[-1].split()[-1])
+            key = data.structure_1 + " " + data.structure_2
+            self.global_alignments[key] = data
+
+    def _read_pocket(self):
+        self.pocket_alignmets = {}
+        for string in self.pocket_sections:
+            data = Data()
+            data.has_pocket_alignment = False
+            data.template_res, data.query_res = [], []
+            for line in string.splitlines():
+                if "Structure 1" in line and "Pocket:" in line:
+                    data.tname = line.split()[-1].split(':')[-1]
+                if "Structure 2" in line and "Pocket:" in line:
+                    data.qname = line.split()[-1].split(':')[-1]
                 if "PS-score" in line:
-                    self.pocket_property.ps_score = float(line.split(',')[0].split()[-1])
+                    data.ps_score = float(line.split(',')[0].split()[-1])
+                if "RMSD" in line and "Seq identity" in line:
+                    data.rmsd = float(line.split(',')[0].split()[-1])
+                    data.seq_identity = float(line.split(',')[-1].split()[-1])
                 if "*" in line and "*" == line[-1] and "******" not in line:
+                    data.has_pocket_alignment = True
                     tokens = line.split()
-                    self.matching_list.append([[tokens[1], int(tokens[2])],
-                                               [tokens[4], int(tokens[5])]])
+                    data.template_chainid = tokens[1]
+                    data.query_chainid = tokens[4]
+                    data.template_res.append(int(tokens[2]))
+                    data.query_res.append(int(tokens[5]))
+            key = data.tname + " " + data.qname
+            self.pocket_alignmets[key] = data
 
-                    self.pocket_property.template_chainid = tokens[1]
-                    self.pocket_property.query_chainid = tokens[4]
+    def queryGlobal(self, structure_1, structure_2):
+        return self.global_alignments[structure_1 + " " + structure_2]
 
-                    self.pocket_property.template_res.append(int(tokens[2]))
-                    self.pocket_property.query_res.append(int(tokens[5]))
+    def queryPocket(self, tname, qname):
+        try:
+            key = tname + " " + qname
+            return self.pocket_alignmets[key]
+        except:
+            raise KeyError, "Can not find pockets for %s and %s" % (tname, qname)
 
 
 class LpcKcombuResult(luigi.Task):

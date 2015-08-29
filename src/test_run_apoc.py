@@ -3,47 +3,37 @@ import unittest
 from run_control_apoc import ApocResultParer, LpcApocResultTask
 from run_control_apoc import LpcKcombuResult, LpcPocketPathTask
 from apoc_inputs import DecompressedPdb
-from my_pdb import buildSelect
-from xcms import LpcApocXcms
-from Bio.PDB import PDBParser, PDBIO
 
 
 class Test(unittest.TestCase):
 
     def setUp(self):
-        self.task = LpcApocResultTask("3sis_MN0_A_6535", "10gs_VWW_A_210")
+        self.task = LpcApocResultTask("3v76_FDA_A_547", "3zxs_FAD_A_1509")
         luigi.build([self.task],
                     local_scheduler=True)
 
     def test_a_ApocResultPaser(self):
         with self.task.output().open("r") as f:
             parser = ApocResultParer(f.read())
-            self.assertEqual(0.25506, parser.global_property.tm_score)
-            self.assertEqual(5.39, parser.global_property.rmsd)
-            self.assertEqual(0.034, parser.global_property.seq_identity)
+            global_alignment = parser.queryGlobal("3v76A", "3zxsA")
+            self.assertEqual(0.26646, global_alignment.tm_score)
+            self.assertEqual(6.32, global_alignment.rmsd)
+            self.assertEqual(0.070, global_alignment.seq_identity)
 
-            self.assertEqual(1.87, parser.pocket_property.rmsd)
-            self.assertEqual(0.125, parser.pocket_property.seq_identity)
-            self.assertEqual(0.29410, parser.pocket_property.ps_score)
-            self.assertSequenceEqual([["A", 187], ["A", 50]],
-                                     parser.matching_list[0])
+            pocket_alignment = parser.queryPocket("3v76_FDA_A_547", "3zxs_FAD_A_1509")
+            self.assertEqual(0.34803, pocket_alignment.ps_score)
+            self.assertEqual(3.25, pocket_alignment.rmsd)
+            self.assertEqual('A', pocket_alignment.template_chainid)
+            self.assertListEqual([402, 44], pocket_alignment.template_res)
+            self.assertListEqual([269, 303], pocket_alignment.query_res)
 
-    def test_b_buildSelect(self):
-        pdb_parser = PDBParser(QUIET=True)
-
-        t_ifn = "../dat/pdb3sis.ent"
-        t_structure = pdb_parser.get_structure('t', t_ifn)
-
-        io = PDBIO()
-        io.set_structure(t_structure)
-
-        f = self.task.output().open('r')
-        parser = ApocResultParer(f.read())
-        selected_residues = [_[0] for _ in parser.matching_list]
-        selected = buildSelect(selected_residues)
-        io.save("test.pdb", selected())
-
-        f.close()
+            pocket_alignment = parser.queryPocket("3v76_FDA_A_547", "3zxs_SF4_A_1510")
+            self.assertEqual(0.36987, pocket_alignment.ps_score)
+            self.assertEqual(2.55, pocket_alignment.rmsd)
+            if pocket_alignment.has_pocket_alignment:
+                self.assertEqual('A', pocket_alignment.template_chainid)
+                self.assertListEqual([402, 44], pocket_alignment.template_res)
+                self.assertListEqual([269, 303], pocket_alignment.query_res)
 
     def test_c_kcombu(self):
         luigi.build([LpcKcombuResult('104m_NBN_A_156', '1m8e_7NI_A_906')],
@@ -59,11 +49,11 @@ class Test(unittest.TestCase):
         luigi.build([LpcPocketPathTask('4ej7_ATP_C_401')],
                     local_scheduler=True)
 
-    def test_f_xcms(self):
-        luigi.build([LpcApocXcms('3vn9_ANK_A_401', '4ej7_ATP_C_401'),
-                     LpcApocXcms('3v76_FDA_A_547', '3zxs_FAD_A_1509'),
-                     LpcApocXcms('4a2a_ATP_B_1391', '4a5a_ANP_A_700')],
-                    local_scheduler=True)
+    # def test_f_xcms(self):
+    #     luigi.build([LpcApocXcms('3vn9_ANK_A_401', '4ej7_ATP_C_401'),
+    #                  LpcApocXcms('3v76_FDA_A_547', '3zxs_FAD_A_1509'),
+    #                  LpcApocXcms('4a2a_ATP_B_1391', '4a5a_ANP_A_700')],
+    #                 local_scheduler=True)
 
 if __name__ == "__main__":
     unittest.main()
