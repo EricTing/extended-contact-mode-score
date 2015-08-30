@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from sklearn.metrics import matthews_corrcoef  # matthews_corrcoef has to be imported before everything to avoid segfault
+# matthews_corrcoef has to be imported before everything to avoid segfault
+from sklearn.metrics import matthews_corrcoef
 import luigi
 import os
-import pybel
 from scipy.spatial.distance import euclidean
 from Bio.PDB import PDBParser
 
@@ -31,9 +31,6 @@ class LpcApocXcms(luigi.Task):
     def requires(self):
         return [LpcKcombuResult(self.tname,
                                 self.qname,
-                                self.subset),
-                LpcKcombuResult(self.qname,
-                                self.tname,
                                 self.subset),
                 LpcApocResultTask(self.tname,
                                   self.qname,
@@ -137,8 +134,13 @@ class LpcApocXcms(luigi.Task):
         print "xcms output %s" % (self.output().path)
 
 
-def main():
-    pass
+def main(tname, qname):
+    if tname != "tname":
+        luigi.build([LpcApocXcms(tname, qname, "subject")],
+                    local_scheduler=True)
+
 
 if __name__ == '__main__':
-    main()
+    import sys
+    tname, qname = sys.argv[1], sys.argv[2]
+    main(tname, qname)
