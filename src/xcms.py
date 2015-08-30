@@ -10,6 +10,7 @@ from Bio.PDB import PDBParser
 from urls import APOC_WORKING_DIR
 from run_control_apoc import ApocResultParer, LpcPocketPathTask
 from run_control_apoc import LpcKcombuResult, LpcApocResultTask
+from run_control_apoc import PkcombuAtomMatchParser, getPdbAtomsBySerialNum
 
 
 def buildArrayOfContact(residue_coords, atom_coords):
@@ -66,12 +67,30 @@ class LpcApocXcms(luigi.Task):
 
         return coords
 
-    def _select_ligand_atom_coords(self, tname, qname):
-        sdf_path = LpcKcombuResult(tname, qname, self.subset).output().path
-        ligand = pybel.readfile("sdf", sdf_path).next()
-        ligand.removeh()
-        coords = [atom.coords for atom in ligand.atoms]
-        return coords
+    def _select_ligand_atoms(self, tname, qname):
+        kcombu_task = LpcKcombuResult(tname, qname)
+
+        t_pdb = kcombu_task.requires()[0].output().path
+        q_pdb = kcombu_task.requires()[1].output().path
+
+        kcombu_parser = PkcombuAtomMatchParser(kcombu_task.output().path)
+        list_t, list_q = kcombu_parser.getMatchingSerialNums()
+
+        t_atoms = getPdbAtomsBySerialNum(t_pdb, list_t)
+        q_atoms = getPdbAtomsBySerialNum(q_pdb, list_q)
+
+        t_eles = [atom.element for atom in t_atoms]
+        q_eles = [atom.element for atom in q_atoms]
+
+        #  to guarantee atoms are of the same type
+        assert(t_eles == q_eles)
+        return t_atoms, q_atoms
+
+    def _select_ligand_atom_coords(self):
+        t_atoms, q_atoms = self._select_ligand_atoms(self.tname, self.qname)
+        t_coords = [atom.coord for atom in t_atoms]
+        q_coords = [atom.coord for atom in q_atoms]
+        return t_coords, q_coords
 
     def run(self):
         with LpcApocResultTask(self.tname,
@@ -86,8 +105,9 @@ class LpcApocXcms(luigi.Task):
         f.write("Pocket for template:\t\t%s\n" % LpcPocketPathTask(self.tname).output().path)
         f.write("Pocket for query:\t\t%s\n" % LpcPocketPathTask(self.qname).output().path)
         f.write("Apoc result:\t\t%s\n" % LpcApocResultTask(self.tname, self.qname, self.subset).output().path)
-        f.write("MCS for template in sdf format:\t\t%s\n" % LpcKcombuResult(self.tname, self.qname, self.subset).output().path)
-        f.write("MCS for query in sdf format:\t\t%s\n" % LpcKcombuResult(self.qname, self.tname, self.subset).output().path)
+        f.write("Kcombu matching atom result:\t\t%s\n" % LpcKcombuResult(self.tname, self.qname, self.subset).output().path)
+
+        t_coords, q_coords = self._select_ligand_atom_coords()
 
         pocket_alignment = apoc_parser.queryPocket(self.tname, self.qname)
         if pocket_alignment.has_pocket_alignment:
@@ -96,10 +116,8 @@ class LpcApocXcms(luigi.Task):
             t_res = self._select_residues_coords(self.tname,
                                                  pocket_alignment.template_chainid,
                                                  pocket_alignment.template_res)
-            t_lig = self._select_ligand_atom_coords(self.tname,
-                                                    self.qname)
 
-            t_contact = buildArrayOfContact(t_res, t_lig)
+            t_contact = buildArrayOfContact(t_res, t_coords)
             f.write("Contact in template's complex\n")
             f.write(" ".join(map(str, t_contact)) + "\n")
 
@@ -108,10 +126,7 @@ class LpcApocXcms(luigi.Task):
                                                  pocket_alignment.query_chainid,
                                                  pocket_alignment.query_res)
 
-            q_lig = self._select_ligand_atom_coords(self.qname,
-                                                    self.tname)
-
-            q_contact = buildArrayOfContact(q_res, q_lig)
+            q_contact = buildArrayOfContact(q_res, q_coords)
             f.write("Contact in query's complex\n")
             f.write(" ".join(map(str, q_contact)) + "\n")
 
