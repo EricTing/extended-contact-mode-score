@@ -4,6 +4,7 @@ import luigi
 import subprocess32
 import os
 import re
+from Bio.PDB import PDBParser
 from urls import LPC_DIR, APOC_WORKING_DIR, APOC_BIN, KCOMBU_BIN
 from apoc_inputs import LigandExpStructureInPdb
 
@@ -114,6 +115,40 @@ class ApocResultParer:
             raise KeyError, "Can not find pockets for %s and %s" % (tname, qname)
 
 
+class PkcombuAtomMatchParser:
+    def __init__(self, oam_fn):
+        f = open(oam_fn, 'r')
+        self.content = f.read()
+        f.close()
+
+        self.data = Data()
+
+    def _readPdbMatchingSerialNums(self):
+        lines = self.content.splitlines()
+        list_a, list_b = [], []
+        for line in lines:
+            if line[0].isdigit():
+                tokens = line.split()
+                list_a.append(int(tokens[1]))
+                list_b.append(int(tokens[5]))
+
+        return list_a, list_b
+
+    def getMatchingSerialNums(self):
+        return self._readPdbMatchingSerialNums()
+
+
+def getPdbAtomsBySerialNum(pdb_fn, serial_nums):
+    parser = PDBParser(QUIET=True)
+    structure = parser.get_structure('x', pdb_fn)
+    atoms = {atom.serial_number : atom for atom in structure.get_atoms()}
+    re_ordered = []
+    for num in serial_nums:
+        re_ordered.append(atoms[num])
+
+    return re_ordered
+
+
 class LpcKcombuResult(luigi.Task):
 
     tname = luigi.Parameter()
@@ -131,7 +166,7 @@ class LpcKcombuResult(luigi.Task):
 
     def mypath(self):
         path = os.path.join(self.mydir(),
-                            self.tname + "__" + self.qname + ".sdf")
+                            self.tname + "__" + self.qname + ".oam")
         return path
 
     def output(self):
@@ -152,7 +187,7 @@ class LpcKcombuResult(luigi.Task):
         cmds = [KCOMBU_BIN,
                 "-A", inputs[0],
                 "-B", inputs[1],
-                "-omcs", self.output().path]
+                "-oam", self.output().path]
         try:
             subprocess32.call(["mkdir", "-p", self.mydir()])
             subprocess32.call(cmds)

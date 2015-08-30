@@ -2,6 +2,7 @@ import luigi
 import os
 import unittest
 from xcms import LpcApocXcms
+from run_control_apoc import PkcombuAtomMatchParser, getPdbAtomsBySerialNum
 from run_control_apoc import ApocResultParer, LpcApocResultTask
 from run_control_apoc import LpcKcombuResult, LpcPocketPathTask
 from apoc_inputs import DecompressedPdb
@@ -45,6 +46,20 @@ class Test(unittest.TestCase):
             pass
         luigi.build([to_build],
                     local_scheduler=True)
+
+        t_pdb = to_build.requires()[0].output().path
+        q_pdb = to_build.requires()[1].output().path
+
+        kcombu_parser = PkcombuAtomMatchParser(to_build.output().path)
+        list_t, list_q = kcombu_parser.getMatchingSerialNums()
+
+        t_atoms = getPdbAtomsBySerialNum(t_pdb, list_t)
+        q_atoms = getPdbAtomsBySerialNum(q_pdb, list_q)
+
+        t_eles = [atom.element for atom in t_atoms]
+        q_eles = [atom.element for atom in q_atoms]
+
+        self.assertListEqual(t_eles, q_eles)
 
     def test_d_pdb(self):
         luigi.build([DecompressedPdb('104m')],
