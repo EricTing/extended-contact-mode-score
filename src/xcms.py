@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
+from sklearn.metrics import matthews_corrcoef  # matthews_corrcoef has to be imported before everything to avoid segfault
 import luigi
 import os
 import pybel
 from scipy.spatial.distance import euclidean
-from sklearn.metrics import matthews_corrcoef
 from Bio.PDB import PDBParser
 
 from urls import APOC_WORKING_DIR
@@ -79,33 +79,47 @@ class LpcApocXcms(luigi.Task):
                                self.subset).output().open('r') as f:
             apoc_parser = ApocResultParer(f.read())
 
-        if apoc_parser.pocket_property.has_alignment is True:
+        f = self.output().open('w')
+        f.write("Inputs\n")
+        f.write("================================================================================\n")
+        f.write("template:\t\t%s\nquery:\t\t%s\n" % (self.tname, self.qname))
+        f.write("Pocket for template:\t\t%s\n" % LpcPocketPathTask(self.tname).output().path)
+        f.write("Pocket for query:\t\t%s\n" % LpcPocketPathTask(self.qname).output().path)
+        f.write("Apoc result:\t\t%s\n" % LpcApocResultTask(self.tname, self.qname, self.subset).output().path)
+        f.write("MCS for template in sdf format:\t\t%s\n" % LpcKcombuResult(self.tname, self.qname, self.subset).output().path)
+        f.write("MCS for query in sdf format:\t\t%s\n" % LpcKcombuResult(self.qname, self.tname, self.subset).output().path)
 
-            # the first complex
+        pocket_alignment = apoc_parser.queryPocket(self.tname, self.qname)
+        if pocket_alignment.has_pocket_alignment:
+            f.write("Calculating CMS\n")
+            f.write("================================================================================\n")
             t_res = self._select_residues_coords(self.tname,
-                                                apoc_parser.pocket_property.template_chainid,
-                                                apoc_parser.pocket_property.template_res)
-
+                                                 pocket_alignment.template_chainid,
+                                                 pocket_alignment.template_res)
             t_lig = self._select_ligand_atom_coords(self.tname,
                                                     self.qname)
 
             t_contact = buildArrayOfContact(t_res, t_lig)
-            print t_contact
+            f.write("Contact in template's complex\n")
+            f.write(" ".join(map(str, t_contact)) + "\n")
 
             # the second complex
             q_res = self._select_residues_coords(self.qname,
-                                                apoc_parser.pocket_property.query_chainid,
-                                                apoc_parser.pocket_property.query_res)
+                                                 pocket_alignment.query_chainid,
+                                                 pocket_alignment.query_res)
 
             q_lig = self._select_ligand_atom_coords(self.qname,
                                                     self.tname)
 
             q_contact = buildArrayOfContact(q_res, q_lig)
-            print q_contact
+            f.write("Contact in query's complex\n")
+            f.write(" ".join(map(str, q_contact)) + "\n")
 
             cms = matthews_corrcoef(t_contact, q_contact)
-            print "\nFine Contact Mode Score between %s and %s : %f\n" % (self.tname, self.qname, cms)
-            pass
+            f.write("Contact Mode Score:\t\t%f\n" % cms)
+
+        f.close()
+        print "xcms output %s" % (self.output().path)
 
 
 def main():
