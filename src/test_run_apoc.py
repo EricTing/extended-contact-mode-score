@@ -38,7 +38,12 @@ class Test(unittest.TestCase):
                 self.assertListEqual([269, 303], pocket_alignment.query_res)
 
     def test_c_kcombu(self):
-        luigi.build([LpcKcombuResult('104m_NBN_A_156', '1m8e_7NI_A_906')],
+        to_build = LpcKcombuResult('3vn9_ANK_A_401', '4ej7_ATP_C_401')
+        try:
+            os.remove(to_build.output().path)
+        except:
+            pass
+        luigi.build([to_build],
                     local_scheduler=True)
 
     def test_d_pdb(self):
@@ -50,18 +55,6 @@ class Test(unittest.TestCase):
                     local_scheduler=True)
         luigi.build([LpcPocketPathTask('4ej7_ATP_C_401')],
                     local_scheduler=True)
-
-    def test_f_xcms(self):
-        to_build = [LpcApocXcms('3vn9_ANK_A_401', '4ej7_ATP_C_401'),
-                     LpcApocXcms('3v76_FDA_A_547', '3zxs_FAD_A_1509'),
-                     LpcApocXcms('4a2a_ATP_B_1391', '4a5a_ANP_A_700')]
-
-        for task in to_build:
-            try:
-                os.remove(task.output().path)
-            except:
-                pass
-        luigi.build(to_build, local_scheduler=True)
 
 
 if __name__ == "__main__":
