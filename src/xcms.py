@@ -52,6 +52,12 @@ class LpcApocXcms(luigi.Task):
                             "%s__%s.xcms" % (self.tname, self.qname))
         return luigi.LocalTarget(path)
 
+    def _kcombu_results(self):
+        path = LpcKcombuResult(self.tname,
+                               self.qname,
+                               self.subset).output().path
+        return PkcombuAtomMatchParser(path)
+
     def _select_residues_coords(self, name, chain_id, selected):
         pdb_path = LpcPocketPathTask(name).output().path
         pdb_parser = PDBParser(QUIET=True)
@@ -104,24 +110,37 @@ class LpcApocXcms(luigi.Task):
         f.write("Apoc result:\t\t%s\n" % LpcApocResultTask(self.tname, self.qname, self.subset).output().path)
         f.write("Kcombu matching atom result:\t\t%s\n" % LpcKcombuResult(self.tname, self.qname, self.subset).output().path)
 
+        kcombu_data = self._kcombu_results().data
+        f.write("Kcombu tanimoto:\t\t%f\n" % kcombu_data.tanimoto)
+
         t_coords, q_coords = self._select_ligand_atom_coords()
 
         pocket_alignment = apoc_parser.queryPocket(self.tname, self.qname)
         if pocket_alignment.has_pocket_alignment:
-            f.write("Calculating CMS\n")
-            f.write("================================================================================\n")
+            f.write("Total number of matching residues:\t\t%d\n"
+                    % (len(pocket_alignment.template_res)))
+            f.write("Total number of matching ligand coordinates:\t\t%d\n"
+                    % len(t_coords))
+            f.write("PS-score:\t\t%f\n" % pocket_alignment.ps_score)
+
             t_res = self._select_residues_coords(self.tname,
                                                  pocket_alignment.template_chainid,
                                                  pocket_alignment.template_res)
+
+            q_res = self._select_residues_coords(self.qname,
+                                                 pocket_alignment.query_chainid,
+                                                 pocket_alignment.query_res)
+
+            f.write("Total number of matching protein coordinates:\t\t%d\n"
+                    % len(t_res))
+
+            f.write("Calculating CMS\n")
+            f.write("================================================================================\n")
 
             t_contact = buildArrayOfContact(t_res, t_coords)
             f.write("Contact in template's complex\n")
             f.write(" ".join(map(str, t_contact)) + "\n")
 
-            # the second complex
-            q_res = self._select_residues_coords(self.qname,
-                                                 pocket_alignment.query_chainid,
-                                                 pocket_alignment.query_res)
 
             q_contact = buildArrayOfContact(q_res, q_coords)
             f.write("Contact in query's complex\n")

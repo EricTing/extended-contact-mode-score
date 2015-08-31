@@ -123,6 +123,10 @@ class PkcombuAtomMatchParser:
 
         self.data = Data()
 
+        for line in self.content.splitlines():
+            if "tanimoto" in line:
+                self.data.tanimoto = float(line.split()[-1])
+
     def _readPdbMatchingSerialNums(self):
         lines = self.content.splitlines()
         list_a, list_b = [], []
