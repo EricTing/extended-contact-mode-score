@@ -8,13 +8,14 @@ from scipy.spatial.distance import euclidean
 from Bio.PDB import PDBParser
 
 from urls import APOC_WORKING_DIR
+from apoc_inputs import DecompressedPdb
 from run_control_apoc import ApocResultParer, LpcPocketPathTask
 from run_control_apoc import LpcKcombuResult, LpcApocResultTask
 from run_control_apoc import PkcombuAtomMatchParser, getPdbAtomsBySerialNum
 
 
 def buildArrayOfContact(residue_coords, atom_coords):
-    return [1 if euclidean(res, atom) < 4.2 else 0
+    return [1 if euclidean(res, atom) < 4.5 else 0
             for res in residue_coords
             for atom in atom_coords]
 
@@ -29,12 +30,16 @@ class LpcApocXcms(luigi.Task):
         return name.split('_')
 
     def requires(self):
+        t_pdb = self.tname.split('_')[0]
+        q_pdb = self.qname.split('_')[0]
         return [LpcKcombuResult(self.tname,
                                 self.qname,
                                 self.subset),
                 LpcApocResultTask(self.tname,
                                   self.qname,
                                   self.subset),
+                DecompressedPdb(t_pdb),
+                DecompressedPdb(q_pdb),
                 LpcPocketPathTask(self.tname),
                 LpcPocketPathTask(self.qname)]
 
@@ -49,7 +54,7 @@ class LpcApocXcms(luigi.Task):
 
     def output(self):
         path = os.path.join(self.mydir(),
-                            "%s__%s.xcms" % (self.tname, self.qname))
+                            "%s__%s_atomic.xcms" % (self.tname, self.qname))
         return luigi.LocalTarget(path)
 
     def _kcombu_results(self):
@@ -58,17 +63,19 @@ class LpcApocXcms(luigi.Task):
                                self.subset).output().path
         return PkcombuAtomMatchParser(path)
 
-    def _select_residues_coords(self, name, chain_id, selected):
-        pdb_path = LpcPocketPathTask(name).output().path
+    def _select_residues(self, name, chain_id, selected):
+        pdb_id = name.split('_')[0]
+        pdb_path = DecompressedPdb(pdb_id).output().path
         pdb_parser = PDBParser(QUIET=True)
         pdb_structure = pdb_parser.get_structure(name, pdb_path)
         chain = pdb_structure[0][chain_id]
         coords = []
+        names = []
         for res_id in selected:
             for atom in chain[res_id].get_unpacked_list():
+                names.append(atom.get_name())
                 coords.append(atom.get_coord())
-
-        return coords
+        return coords, names
 
     def _select_ligand_atoms(self, tname, qname):
         kcombu_task = LpcKcombuResult(tname, qname)
@@ -122,27 +129,31 @@ class LpcApocXcms(luigi.Task):
             f.write("Total number of matching ligand coordinates:\t\t%d\n"
                     % len(t_coords))
             f.write("PS-score:\t\t%f\n" % pocket_alignment.ps_score)
+            f.write("p-value:\t\t%f\n" % pocket_alignment.p_value)
+            f.write("z-score:\t\t%f\n" % pocket_alignment.z_score)
 
-            t_res = self._select_residues_coords(self.tname,
-                                                 pocket_alignment.template_chainid,
-                                                 pocket_alignment.template_res)
+            t_prt_coords, t_prt_names = self._select_residues(self.tname,
+                                                              pocket_alignment.template_chainid,
+                                                              pocket_alignment.template_res)
 
-            q_res = self._select_residues_coords(self.qname,
-                                                 pocket_alignment.query_chainid,
-                                                 pocket_alignment.query_res)
+            q_prt_coords, q_prt_names = self._select_residues(self.qname,
+                                                              pocket_alignment.query_chainid,
+                                                              pocket_alignment.query_res)
+
+            assert(t_prt_names == q_prt_names)
 
             f.write("Total number of matching protein coordinates:\t\t%d\n"
-                    % len(t_res))
+                    % len(t_prt_coords))
 
             f.write("Calculating CMS\n")
             f.write("================================================================================\n")
 
-            t_contact = buildArrayOfContact(t_res, t_coords)
+            t_contact = buildArrayOfContact(t_prt_coords, t_coords)
             f.write("Contact in template's complex\n")
             f.write(" ".join(map(str, t_contact)) + "\n")
 
 
-            q_contact = buildArrayOfContact(q_res, q_coords)
+            q_contact = buildArrayOfContact(q_prt_coords, q_coords)
             f.write("Contact in query's complex\n")
             f.write(" ".join(map(str, q_contact)) + "\n")
 

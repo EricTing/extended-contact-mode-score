@@ -91,6 +91,8 @@ class ApocResultParer:
                     data.qname = line.split()[-1].split(':')[-1]
                 if "PS-score" in line:
                     data.ps_score = float(line.split(',')[0].split()[-1])
+                    data.p_value = float(line.split(',')[1].split()[-1])
+                    data.z_score = float(line.split(',')[2].split()[-1])
                 if "RMSD" in line and "Seq identity" in line:
                     data.rmsd = float(line.split(',')[0].split()[-1])
                     data.seq_identity = float(line.split(',')[-1].split()[-1])
