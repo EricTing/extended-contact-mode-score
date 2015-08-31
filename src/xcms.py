@@ -3,6 +3,7 @@
 # matthews_corrcoef has to be imported before everything to avoid segfault
 from sklearn.metrics import matthews_corrcoef
 import luigi
+import json
 import os
 from scipy.spatial.distance import euclidean
 from Bio.PDB import PDBParser
@@ -75,7 +76,7 @@ class LpcApocXcms(luigi.Task):
             for atom in chain[res_id].get_unpacked_list():
                 names.append(atom.get_name())
                 coords.append(atom.get_coord())
-        return coords, names
+                return coords, names
 
     def _select_ligand_atoms(self, tname, qname):
         kcombu_task = LpcKcombuResult(tname, qname)
@@ -109,29 +110,22 @@ class LpcApocXcms(luigi.Task):
             apoc_parser = ApocResultParer(f.read())
 
         f = self.output().open('w')
-        f.write("Inputs\n")
-        f.write("================================================================================\n")
-        f.write("template:\t\t%s\nquery:\t\t%s\n" % (self.tname, self.qname))
-        f.write("Pocket for template:\t\t%s\n" % LpcPocketPathTask(self.tname).output().path)
-        f.write("Pocket for query:\t\t%s\n" % LpcPocketPathTask(self.qname).output().path)
-        f.write("Apoc result:\t\t%s\n" % LpcApocResultTask(self.tname, self.qname, self.subset).output().path)
-        f.write("Kcombu matching atom result:\t\t%s\n" % LpcKcombuResult(self.tname, self.qname, self.subset).output().path)
+
+        data = {}
+        data['tname'] = self.tname
+        data['qname'] = self.qname
+        data['t pocket'] = LpcPocketPathTask(self.tname).output().path
+        data['q pocket'] = LpcPocketPathTask(self.qname).output().path
+        data['Apoc result'] = LpcApocResultTask(self.tname, self.qname, self.subset).output().path
+        data['Kcombu result'] = LpcKcombuResult(self.tname, self.qname, self.subset).output().path
 
         kcombu_data = self._kcombu_results().data
-        f.write("Kcombu tanimoto:\t\t%f\n" % kcombu_data.tanimoto)
+        data['Kcombu tanimoto'] = kcombu_data.tanimoto
 
         t_coords, q_coords = self._select_ligand_atom_coords()
 
         pocket_alignment = apoc_parser.queryPocket(self.tname, self.qname)
         if pocket_alignment.has_pocket_alignment:
-            f.write("Total number of matching residues:\t\t%d\n"
-                    % (len(pocket_alignment.template_res)))
-            f.write("Total number of matching ligand coordinates:\t\t%d\n"
-                    % len(t_coords))
-            f.write("PS-score:\t\t%f\n" % pocket_alignment.ps_score)
-            f.write("p-value:\t\t%f\n" % pocket_alignment.p_value)
-            f.write("z-score:\t\t%f\n" % pocket_alignment.z_score)
-
             t_prt_coords, t_prt_names = self._select_residues(self.tname,
                                                               pocket_alignment.template_chainid,
                                                               pocket_alignment.template_res)
@@ -142,25 +136,24 @@ class LpcApocXcms(luigi.Task):
 
             assert(t_prt_names == q_prt_names)
 
-            f.write("Total number of matching protein coordinates:\t\t%d\n"
-                    % len(t_prt_coords))
-
-            f.write("Calculating CMS\n")
-            f.write("================================================================================\n")
-
             t_contact = buildArrayOfContact(t_prt_coords, t_coords)
-            f.write("Contact in template's complex\n")
-            f.write(" ".join(map(str, t_contact)) + "\n")
-
-
             q_contact = buildArrayOfContact(q_prt_coords, q_coords)
-            f.write("Contact in query's complex\n")
-            f.write(" ".join(map(str, q_contact)) + "\n")
-
             cms = matthews_corrcoef(t_contact, q_contact)
-            f.write("Contact Mode Score:\t\t%f\n" % cms)
 
+            data['# residues'] = len(pocket_alignment.template_res)
+            data['# ligand atoms'] = len(t_coords)
+            data['Apoc ps-score'] = pocket_alignment.ps_score
+            data['Apoc p-value'] = pocket_alignment.p_value
+            data['Apoc z-score'] = pocket_alignment.z_score
+            data['# residue atoms'] = len(t_prt_coords)
+            data['t contact'] = t_contact
+            data['q contact'] = q_contact
+            data['xcms'] = cms
+
+        to_write = json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+        f.write(to_write)
         f.close()
+
         print "xcms output %s" % (self.output().path)
 
 
