@@ -106,7 +106,9 @@ class ApocResultParer:
             key = data.tname + " " + data.qname
             self.pocket_alignmets[key] = data
 
-    def queryGlobal(self, structure_1, structure_2):
+    def queryGlobal(self, tname, qname):
+        structure_1 = tname.split('_')[0] + tname.split('_')[2]
+        structure_2 = qname.split('_')[0] + qname.split('_')[2]
         return self.global_alignments[structure_1 + " " + structure_2]
 
     def queryPocket(self, tname, qname):
