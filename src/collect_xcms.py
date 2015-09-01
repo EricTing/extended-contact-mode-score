@@ -4,6 +4,7 @@ import luigi
 import pickle
 import json
 import os
+import pandas as pd
 from urls import WORKING_DIR
 from xcms import LpcApocXcms
 from apoc_inputs import ApocListPathTask
@@ -45,8 +46,41 @@ class AtomicXcmsCollection(luigi.Task):
                 f.write(key + "\n")
 
 
+class AtomicXcmsTable(luigi.Task):
+
+    def requires(self):
+        return AtomicXcmsCollection()
+
+    def output(self):
+        csv_path = os.path.join(WORKING_DIR, "atmic_xcms.csv")
+        return luigi.LocalTarget(csv_path)
+
+    def run(self):
+        collected, missed = self.requires().output()
+        with collected.open('r') as f:
+            dicts = pickle.load(f)
+
+        cols = ['Apoc ps-score', 'Kcombu tanimoto',
+                'xcms', '# ligand atoms', '# residue atoms']
+        datas = []
+        for key, data in dicts.iteritems():
+            tname, qname = key.split()
+            try:
+                mydata = [data[_] for _ in cols]
+                mydata.append(tname)
+                mydata.append(qname)
+                datas.append(mydata)
+            except:
+                print tname, qname
+
+        cols = cols + ['tname', 'qname']
+        dset = pd.DataFrame(datas, columns=cols)
+        dset.to_csv(self.output().path)
+
+
 def main():
-    luigi.build([AtomicXcmsCollection()],
+    luigi.build([AtomicXcmsCollection(),
+                 AtomicXcmsTable()],
                 local_scheduler=True)
 
 
