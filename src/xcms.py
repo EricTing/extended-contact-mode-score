@@ -124,6 +124,9 @@ class LpcApocXcms(luigi.Task):
 
         t_coords, q_coords = self._select_ligand_atom_coords()
 
+        global_alignment = apoc_parser.queryGlobal(self.tname, self.qname)
+        data['seq identity'] = global_alignment.seq_identity
+
         pocket_alignment = apoc_parser.queryPocket(self.tname, self.qname)
         if pocket_alignment.has_pocket_alignment:
             t_prt_coords, t_prt_names = self._select_residues(self.tname,
