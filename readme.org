@@ -4,17 +4,34 @@ Extend the application of Contact Mode Score to non-identical complexes
 ** Methods
 1. Contact Matrix
    1. Corresponding residues of two binding pockets
-      1. APoc
-   2. Corresponding heavy atoms of two ligands
-      1. Kcombu
+      1. APoc LPC dataset
+         1. [ ] Ligands of two pockets have a Tc >= 0.5
+         2. [ ] Sequence similarity < 30% between the two associated proteins
+         3. [ ] shaore >= 50 atmic ligand-protein contacts of same type
+         4. [X] the pdb files provided by Apoc contains only C_alpha atoms
+   2. [X] should use the original pdb files in order to calcuate all-atom xcms value
+      1. use 4.5 A as the threshold for all-atom xcms calculation
+   3. [ ] certain ligands cannot be grepped
+      e.g. 3q2k_NAD_P_500
+   4. Corresponding heavy atoms of two ligands
+      1. Kcombu (currently used)
       2. SIMCOMP (used in Apoc paper)
 
-** Script
-1. script
-   ./src/apoc_inputs.py
-2. The pipeline
-   #+BEGIN_SRC sh
-     apoc prt1.pdb prt2.pdb | parsing_apc.py > matching_residues.txt
-     kcombu lig1.sdf lig2.sdf | parsing_kcombu.py > matching_ligand_heavy_atoms.txt
-     xCms -r matching_residues.txt -l matching_ligand_heavy_atoms.txt
-   #+END_SRC
+** Pipeline
+1. Original pdb file for the complex
+   1. apoc_inputs.PdbPathTask
+   2. apoc_inputs.DecompressedPdb
+2. Grep Ligand atoms from the pdb
+   1. apoc_inputs.LigandExpStructureInPdb
+3. Run apoc
+   1. run_control_apoc.LpcApocResultTask
+4. Run kcombu
+   1. run_control_apoc.LpcKcombuResult
+5. Parsers
+   1. run_control_apoc.ApocResultParer
+   2. run_control_apoc.PkcombuAtomMatchParser
+6. Run xcms
+   1. xcms.LpcApocXcms
+7. Collect data for analysis
+   1. collect_xcms.AtomicXcmsCollection
+   2. collect_xcms.AtomicXcmsTable
