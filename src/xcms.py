@@ -76,7 +76,7 @@ class LpcApocXcms(luigi.Task):
             for atom in chain[res_id].get_unpacked_list():
                 names.append(atom.get_name())
                 coords.append(atom.get_coord())
-                return coords, names
+        return coords, names
 
     def _select_ligand_atoms(self, tname, qname):
         kcombu_task = LpcKcombuResult(tname, qname)
