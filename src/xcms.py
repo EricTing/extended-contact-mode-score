@@ -79,7 +79,7 @@ class LpcApocXcms(luigi.Task):
         return coords, names
 
     def _select_ligand_atoms(self, tname, qname):
-        kcombu_task = LpcKcombuResult(tname, qname)
+        kcombu_task = LpcKcombuResult(tname, qname, self.subset)
 
         t_pdb = kcombu_task.requires()[0].output().path
         q_pdb = kcombu_task.requires()[1].output().path
