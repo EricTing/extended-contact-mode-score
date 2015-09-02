@@ -52,3 +52,11 @@ Extend the application of Contact Mode Score to non-identical complexes
 7. Collect data for analysis
    1. collect_xcms.AtomicXcmsCollection
    2. collect_xcms.AtomicXcmsTable
+
+** Statistical significance of xcms value
+*** Run on a random dataset
+1. Random set 1 (RS2) from Apoc
+   /ddnB/work/jaydy/dat/apoc/RS2.lst/ddnB/work/jaydy/dat/apoc/RS2.lst
+2. script
+   ./src/run_lpc_randomset.py
+
