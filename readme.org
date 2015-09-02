@@ -13,7 +13,24 @@ Extend the application of Contact Mode Score to non-identical complexes
       1. use 4.5 A as the threshold for all-atom xcms calculation
    3. [ ] certain ligands cannot be grepped
       e.g. 3q2k_NAD_P_500
-   4. Corresponding heavy atoms of two ligands
+   4. [ ] certain pdbs miss some atoms
+      1. in /ddnB/work/jaydy/dat/pdb/vn/pdb3vn9.ent
+         | ATOM | 674 | N  | GLU | A | 130 | -2.316 | -44.226 | 2.992 | 1.00 |  90.63 | N |
+         | ATOM | 675 | CA | GLU | A | 130 | -1.581 | -44.192 | 4.257 | 1.00 |  83.49 | C |
+         | ATOM | 676 | C  | GLU | A | 130 | -1.888 | -42.913 | 5.017 | 1.00 | 100.53 | C |
+         | ATOM | 677 | O  | GLU | A | 130 | -2.031 | -41.844 | 4.392 | 1.00 |  97.24 | O |
+         | ATOM | 678 | CB | GLU | A | 130 | -0.072 | -44.310 | 4.027 | 1.00 |  73.44 | C |
+      2. in /ddnB/work/jaydy/dat/pdb/t9/pdb3t9a.ent
+         | ATOM | 1612 | N   | GLU | A | 238 |  8.315 | -2.250 | 6.872 | 1.00 | 21.85 | N |
+         | ATOM | 1613 | CA  | GLU | A | 238 |  9.731 | -2.356 | 7.160 | 1.00 | 23.40 | C |
+         | ATOM | 1614 | C   | GLU | A | 238 | 10.257 | -0.984 | 7.551 | 1.00 | 23.08 | C |
+         | ATOM | 1615 | O   | GLU | A | 238 |  9.910 |  0.026 | 6.922 | 1.00 | 22.77 | O |
+         | ATOM | 1616 | CB  | GLU | A | 238 | 10.506 | -2.904 | 5.947 | 1.00 | 23.90 | C |
+         | ATOM | 1617 | CG  | GLU | A | 238 | 10.539 | -1.968 | 4.735 | 1.00 | 27.61 | C |
+         | ATOM | 1618 | CD  | GLU | A | 238 | 11.471 | -2.450 | 3.608 | 1.00 | 32.44 | C |
+         | ATOM | 1619 | OE1 | GLU | A | 238 | 12.400 | -3.248 | 3.888 | 1.00 | 35.07 | O |
+         | ATOM | 1620 | OE2 | GLU | A | 238 | 11.268 | -2.020 | 2.448 | 1.00 | 32.92 | O |
+   5. Corresponding heavy atoms of two ligands
       1. Kcombu (currently used)
       2. SIMCOMP (used in Apoc paper)
 

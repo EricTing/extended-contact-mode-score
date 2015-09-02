@@ -137,7 +137,14 @@ class LpcApocXcms(luigi.Task):
                                                               pocket_alignment.query_chainid,
                                                               pocket_alignment.query_res)
 
-            assert(t_prt_names == q_prt_names)
+            try:
+                assert(t_prt_names == q_prt_names)
+            except AssertionError:
+                print t_prt_names
+                print q_prt_names
+                print 'Apoc result', data['Apoc result']
+                print 'Kcombu result', data['Kcombu result']
+                raise AssertionError("protein residues do not match")
 
             t_contact = buildArrayOfContact(t_prt_coords, t_coords)
             q_contact = buildArrayOfContact(q_prt_coords, q_coords)
