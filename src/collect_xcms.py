@@ -31,7 +31,7 @@ class AtomicXcmsCollection(luigi.Task):
             for line in lines:
                 tname, qname = line.split()
                 key = tname + " " + qname
-                lpc_result = LpcApocXcms(tname, qname).output()
+                lpc_result = LpcApocXcms(tname, qname, self.subset).output()
                 if lpc_result.exists():
                     with lpc_result.open('r') as f:
                         collected_content[key] = json.loads(f.read())
@@ -48,11 +48,13 @@ class AtomicXcmsCollection(luigi.Task):
 
 class AtomicXcmsTable(luigi.Task):
 
+    subset = luigi.Parameter()
+
     def requires(self):
-        return AtomicXcmsCollection()
+        return AtomicXcmsCollection(self.subset)
 
     def output(self):
-        csv_path = os.path.join(WORKING_DIR, "atmic_xcms.csv")
+        csv_path = os.path.join(WORKING_DIR, self.subset + "_atmic_xcms.csv")
         return luigi.LocalTarget(csv_path)
 
     def run(self):
@@ -79,8 +81,10 @@ class AtomicXcmsTable(luigi.Task):
 
 
 def main():
-    luigi.build([AtomicXcmsCollection(),
-                 AtomicXcmsTable()],
+    luigi.build([AtomicXcmsCollection("subject"),
+                 AtomicXcmsCollection("rs2"),
+                 AtomicXcmsTable("subject"),
+                 AtomicXcmsTable("rs2")],
                 local_scheduler=True)
 
 

@@ -82,8 +82,14 @@ class ApocListPathTask(luigi.Task):
     subset = luigi.Parameter()
 
     def output(self):
-        subset_lst_path = "%s/%s.lst" % (DAT_DIR, self.subset)
-        return luigi.LocalTarget(subset_lst_path)
+        if self.subset == "subject" or self.subset == "control":
+            subset_lst_path = "%s/%s.lst" % (DAT_DIR, self.subset)
+            return luigi.LocalTarget(subset_lst_path)
+        elif self.subset == "rs2":
+            subset_lst_path = "/ddnB/work/jaydy/dat/apoc/RS2.lst"
+            return luigi.LocalTarget(subset_lst_path)
+        else:
+            raise KeyError("cannot find the list for %s" % self.subset)
 
 
 class ApocPdbPathsTask(luigi.Task):
