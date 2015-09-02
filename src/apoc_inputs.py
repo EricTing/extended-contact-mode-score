@@ -12,7 +12,7 @@ class PdbPathTask(luigi.Task):
 
     pdb_id = luigi.Parameter()
 
-    def mypath(self):
+    def _mypath(self):
         mid_two = self.pdb_id[1:3]
         pdb_path = os.path.join("/ddnB/work/jaydy/dat/pdb",
                                 mid_two,
@@ -20,12 +20,12 @@ class PdbPathTask(luigi.Task):
         return pdb_path
 
     def output(self):
-        return luigi.LocalTarget(self.mypath())
+        return luigi.LocalTarget(self._mypath())
 
     def run(self):
         print "downloading %s from protein data bank" % self.pdb_id
         url = "http://www.rcsb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId=%s" % self.pdb_id
-        urllib.urlretrieve(url, self.mypath())
+        urllib.urlretrieve(url, self._mypath())
 
 
 class DecompressedPdb(luigi.Task):
@@ -88,7 +88,7 @@ class ApocListPathTask(luigi.Task):
 
 class ApocPdbPathsTask(luigi.Task):
 
-    def pdb_ids(self):
+    def _pdb_ids(self):
 
         ids = []
         with ApocListPathTask("subject").output().open('r') as lst_f:
@@ -117,11 +117,11 @@ class ApocPdbPathsTask(luigi.Task):
 
     def requires(self):
         return ApocListPathTask("subject"), ApocListPathTask("control"),\
-            [PdbPathTask(pdb_id) for pdb_id in self.pdb_ids()]
+            [PdbPathTask(pdb_id) for pdb_id in self._pdb_ids()]
 
     def run(self):
         paths = [PdbPathTask(pdb_id).output().path
-                 for pdb_id in self.pdb_ids()]
+                 for pdb_id in self._pdb_ids()]
         with self.output().open('w') as f:
             for path in paths:
                 f.write(path + "\n")

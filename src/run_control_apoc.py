@@ -21,7 +21,7 @@ class LpcPocketPathTask(luigi.Task):
 
     target_id = luigi.Parameter()
 
-    def mypath(self):
+    def _mypath(self):
         tokens = self.target_id.split('_')
         pdb_id = tokens[0]
         mid_two = pdb_id[1:3]
@@ -31,7 +31,7 @@ class LpcPocketPathTask(luigi.Task):
         return pdb_path
 
     def output(self):
-        return luigi.LocalTarget(self.mypath())
+        return luigi.LocalTarget(self._mypath())
 
 
 class Data:
@@ -163,41 +163,45 @@ class LpcKcombuResult(luigi.Task):
     qname = luigi.Parameter()
     subset = luigi.Parameter(default="subject")
 
-    def my_midtwo(self):
+    def _my_midtwo(self):
         return self.tname[1:3]
 
-    def mydir(self):
+    def _mydir(self):
         dir_path = os.path.join(APOC_WORKING_DIR,
                                 self.subset,
-                                self.my_midtwo())
+                                self._my_midtwo())
         return dir_path
 
-    def mypath(self):
-        path = os.path.join(self.mydir(),
+    def _mypath(self):
+        path = os.path.join(self._mydir(),
                             self.tname + "__" + self.qname + ".oam")
         return path
 
     def output(self):
-        return luigi.LocalTarget(self.mypath())
+        return luigi.LocalTarget(self._mypath())
 
-    def convert(self, name):
+    def _convert(self, name):
         tokens = name.split('_')
         return tokens[:3]
 
     def requires(self):
-        t_tokens = self.convert(self.tname)
-        q_tokens = self.convert(self.qname)
+        t_tokens = self._convert(self.tname)
+        q_tokens = self._convert(self.qname)
         return LigandExpStructureInPdb(t_tokens[0], t_tokens[1], t_tokens[2]),\
             LigandExpStructureInPdb(q_tokens[0], q_tokens[1], q_tokens[2])
 
     def _run_kcombu(self):
+        try:
+            os.makedirs(self._mydir())
+        except:
+            pass
         inputs = [_.output().path for _ in self.requires()]
         cmds = [KCOMBU_BIN,
                 "-A", inputs[0],
                 "-B", inputs[1],
                 "-oam", self.output().path]
         try:
-            subprocess32.call(["mkdir", "-p", self.mydir()])
+            subprocess32.call(["mkdir", "-p", self._mydir()])
             subprocess32.call(cmds)
         except:
             pass
@@ -212,24 +216,24 @@ class LpcApocResultTask(luigi.Task):
     qname = luigi.Parameter()
     subset = luigi.Parameter(default="subject")
 
-    def my_midtwo(self):
+    def _my_midtwo(self):
         return self.tname[1:3]
 
-    def mydir(self):
+    def _mydir(self):
         dir_path = os.path.join(APOC_WORKING_DIR,
                                 self.subset,
-                                self.my_midtwo())
+                                self._my_midtwo())
         return dir_path
 
-    def mypath(self):
-        path = os.path.join(self.mydir(),
+    def _mypath(self):
+        path = os.path.join(self._mydir(),
                             self.tname + "__" + self.qname)
         return path
 
     def output(self):
-        return luigi.LocalTarget(self.mypath())
+        return luigi.LocalTarget(self._mypath())
 
-    def convert(self, name):
+    def _convert(self, name):
         tokens = name.split('_')
         return tokens[0] + tokens[2]
 
@@ -238,7 +242,7 @@ class LpcApocResultTask(luigi.Task):
                 LpcPocketPathTask(self.qname)]
 
     def run_apoc(self):
-        subprocess32.call(["mkdir", "-p", self.mydir()])
+        subprocess32.call(["mkdir", "-p", self._mydir()])
         paths = [_.output().path for _ in self.requires()]
         cmd = [APOC_BIN] + paths
         print " ".join(cmd)
