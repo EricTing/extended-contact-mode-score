@@ -30,7 +30,9 @@ Extend the application of Contact Mode Score to non-identical complexes
          | ATOM | 1618 | CD  | GLU | A | 238 | 11.471 | -2.450 | 3.608 | 1.00 | 32.44 | C |
          | ATOM | 1619 | OE1 | GLU | A | 238 | 12.400 | -3.248 | 3.888 | 1.00 | 35.07 | O |
          | ATOM | 1620 | OE2 | GLU | A | 238 | 11.268 | -2.020 | 2.448 | 1.00 | 32.92 | O |
-   5. Corresponding heavy atoms of two ligands
+   5. list file from apoc contains weird keys words such as "### XYM 35"
+      /ddnB/work/jaydy/dat/apoc/RS2.lst
+   6. Corresponding heavy atoms of two ligands
       1. Kcombu (currently used)
       2. SIMCOMP (used in Apoc paper)
 

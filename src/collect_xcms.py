@@ -29,14 +29,18 @@ class AtomicXcmsCollection(luigi.Task):
         with self.requires().output().open('r') as f:
             lines = f.read().splitlines()
             for line in lines:
-                tname, qname = line.split()
-                key = tname + " " + qname
-                lpc_result = LpcApocXcms(tname, qname, self.subset).output()
-                if lpc_result.exists():
-                    with lpc_result.open('r') as f:
-                        collected_content[key] = json.loads(f.read())
-                else:
-                    missed_content.append(key)
+                try:
+                    tname, qname = line.split()
+                    key = tname + " " + qname
+                    lpc_result = LpcApocXcms(tname, qname, self.subset).output()
+                    if lpc_result.exists():
+                        with lpc_result.open('r') as f:
+                            collected_content[key] = json.loads(f.read())
+                    else:
+                        missed_content.append(key)
+                except ValueError:
+                    print "ERROR!", line
+                    pass
 
         with collected.open('w') as f:
             pickle.dump(collected_content, f)
