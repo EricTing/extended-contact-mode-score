@@ -27,7 +27,7 @@ if [ ! -f ${WORKDIR}/wq.py ]; then
     cp /home/${USER}/Workspace/Bitbucket/wq/wq.py ${WORKDIR}
 fi
 
-FILES=${WORKDIR}/RS2.lst
+FILES=${WORKDIR}/RS2_valid.lst
 TASK=${WORKDIR}/run_lpc_randomset.py
 
 

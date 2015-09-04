@@ -31,7 +31,10 @@ Extend the application of Contact Mode Score to non-identical complexes
          | ATOM | 1619 | OE1 | GLU | A | 238 | 12.400 | -3.248 | 3.888 | 1.00 | 35.07 | O |
          | ATOM | 1620 | OE2 | GLU | A | 238 | 11.268 | -2.020 | 2.448 | 1.00 | 32.92 | O |
    5. list file from apoc contains weird keys words such as "### XYM 35"
-      /ddnB/work/jaydy/dat/apoc/RS2.lst
+      1. original
+         /ddnB/work/jaydy/dat/apoc/RS2.lst
+      2. cleaned
+         /work/jaydy/dat/apoc/RS2_valid.lst
    6. Corresponding heavy atoms of two ligands
       1. Kcombu (currently used)
       2. SIMCOMP (used in Apoc paper)
@@ -58,7 +61,13 @@ Extend the application of Contact Mode Score to non-identical complexes
 ** Statistical significance of xcms value
 *** Run on a random dataset
 1. Random set 1 (RS2) from Apoc
-   /ddnB/work/jaydy/dat/apoc/RS2.lst/ddnB/work/jaydy/dat/apoc/RS2.lst
+   /ddnB/work/jaydy/dat/apoc/RS2.lst/ddnB/work/jaydy/dat/apoc/RS2_valid.lst
 2. script
    ./src/run_lpc_randomset.py
-
+3. run time errors
+   1. missing pdb files
+      /ddnB/work/jaydy/dat/apoc/missing_pdbs.txt
+   2. protein pairs that have mis-matched elements
+      /ddnB/work/jaydy/dat/apoc/mis_matched_prt.txt
+   3. kcombu failures
+      /ddnB/work/jaydy/dat/apoc/kcombu_failures.txt

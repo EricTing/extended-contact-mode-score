@@ -81,12 +81,39 @@ class ApocListPathTask(luigi.Task):
 
     subset = luigi.Parameter()
 
+    def run(self):
+        if self.subset == "subject" or self.subset == "control":
+            subset_lst_path = "%s/%s.lst" % (DAT_DIR, self.subset)
+            assert(os.path.exists(subset_lst_path))
+            pass
+        elif self.subset == "rs2":
+            subset_lst_path = "/ddnB/work/jaydy/dat/apoc/RS2.lst"
+            assert(os.path.exists(subset_lst_path))
+
+            valid = self.output().open('w')
+            invalid = open("/ddnB/work/jaydy/dat/apoc/RS2_invalid.lst", 'w')
+            with open(subset_lst_path, 'r') as f:
+                while True:
+                    line = f.readline()
+                    if line:
+                        tokens = line.split()
+                        if len(tokens) == 2:
+                            valid.write(line)
+                        else:
+                            invalid.write(line)
+                    else:
+                        break
+            valid.close()
+            invalid.close()
+        else:
+            raise KeyError("cannot find the list for %s" % self.subset)
+
     def output(self):
         if self.subset == "subject" or self.subset == "control":
             subset_lst_path = "%s/%s.lst" % (DAT_DIR, self.subset)
             return luigi.LocalTarget(subset_lst_path)
         elif self.subset == "rs2":
-            subset_lst_path = "/ddnB/work/jaydy/dat/apoc/RS2.lst"
+            subset_lst_path = "/ddnB/work/jaydy/dat/apoc/RS2_valid.lst"
             return luigi.LocalTarget(subset_lst_path)
         else:
             raise KeyError("cannot find the list for %s" % self.subset)

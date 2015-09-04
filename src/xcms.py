@@ -93,8 +93,6 @@ class LpcApocXcms(luigi.Task):
         t_eles = [atom.element for atom in t_atoms]
         q_eles = [atom.element for atom in q_atoms]
 
-        #  to guarantee atoms are of the same type
-        assert(t_eles == q_eles)
         return t_atoms, q_atoms
 
     def _select_ligand_atom_coords(self):
@@ -140,11 +138,7 @@ class LpcApocXcms(luigi.Task):
             try:
                 assert(t_prt_names == q_prt_names)
             except AssertionError:
-                print t_prt_names
-                print q_prt_names
-                print 'Apoc result', data['Apoc result']
-                print 'Kcombu result', data['Kcombu result']
-                raise AssertionError("protein residues do not match")
+                raise AssertionError("%s and %s protein residues do not match" % (self.tname, self.qname))
 
             t_contact = buildArrayOfContact(t_prt_coords, t_coords)
             q_contact = buildArrayOfContact(q_prt_coords, q_coords)
