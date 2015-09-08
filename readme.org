@@ -4,7 +4,7 @@ Extend the application of Contact Mode Score to non-identical complexes
 ** Methods
 1. Contact Matrix
    1. Corresponding residues of two binding pockets
-      1. APoc LPC dataset
+      1. <<<subject>>>
          1. [ ] Ligands of two pockets have a Tc >= 0.5
          2. [ ] Sequence similarity < 30% between the two associated proteins
          3. [ ] shaore >= 50 atmic ligand-protein contacts of same type
@@ -60,14 +60,22 @@ Extend the application of Contact Mode Score to non-identical complexes
 
 ** Statistical significance of xcms value
 *** Run on a random dataset
-1. Random set 1 (RS2) from Apoc
+1. Random set (<<<RS2>>>) from Apoc
    /ddnB/work/jaydy/dat/apoc/RS2.lst/ddnB/work/jaydy/dat/apoc/RS2_valid.lst
 2. script
    ./src/run_lpc_randomset.py
-3. run time errors
+3. [X] run time errors
+   Cannot do much about the errors below because of the in-perfection of the source of data.
    1. missing pdb files
       /ddnB/work/jaydy/dat/apoc/missing_pdbs.txt
    2. protein pairs that have mis-matched elements
       /ddnB/work/jaydy/dat/apoc/mis_matched_prt.txt
    3. kcombu failures
       /ddnB/work/jaydy/dat/apoc/kcombu_failures.txt
+4. [ ] curate <<<dataset>>>
+   1. [ ] calculate the all-against-all apoc, kcombu using the successful pockets dataset
+   2. [ ] cluster using DBSCAN based on the ps-score and Tc between two pockets
+      1. \sqrt{ps-score^2 + Tc^2} --> similarity
+      2. similarity(ps-score = 0.4, Tc = 0.4) --> eps
+   3. [ ] use the centroids' xcms to calculate the statistical significance
+5. curate subject
