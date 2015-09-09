@@ -143,6 +143,10 @@ class AtomicXcmsTable(luigi.Task):
         dset = pd.DataFrame(datas, columns=cols)
         dset.to_csv(self.output().path)
 
+    def readDset(self):
+        with self.output().open('r') as inputObj:
+            return pd.read_csv(inputObj, index_col=0)
+
 
 def main():
     luigi.build([AtomicXcmsCollection("subject"),

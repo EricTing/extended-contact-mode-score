@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
 import luigi
+import itertools
 import os
 import pandas as pd
 import run_control_apoc
 from urls import WORKING_DIR
 from collect_xcms import AtomicXcmsTable
+from sklearn.cluster import DBSCAN
+import numpy as np
 
 
 class SuccessfulPocketList(luigi.Task):
@@ -18,6 +21,10 @@ class SuccessfulPocketList(luigi.Task):
     def output(self):
         path = os.path.join(WORKING_DIR, self.subset + "_xcms_success.lst")
         return luigi.LocalTarget(path)
+
+    def readLst(self):
+        with self.output().open('r') as inputObj:
+            return inputObj.read().splitlines()
 
     def run(self):
         ifn = self.requires().output().path
@@ -129,6 +136,42 @@ class Curate:
                     outputObj.write(" ".join(map(str, row)))
                     outputObj.write("\n")
 
+    class ReSample(luigi.Task):
+
+        subset = luigi.Parameter()
+        eps = luigi.Parameter(default=1.15)
+
+        def requires(self):
+            return [Curate.PocketSimilarityMatrix(self.subset),
+                    AtomicXcmsTable(self.subset),
+                    SuccessfulPocketList(self.subset)]
+
+        def output(self):
+            matrix_path = AtomicXcmsTable(self.subset).output().path
+            path = os.path.join(os.path.dirname(matrix_path),
+                                self.subset + "_curated_xcms.csv")
+            return luigi.LocalTarget(path)
+
+        def run(self):
+            ifn = Curate.PocketSimilarityMatrix(self.subset).output().path
+            mat = np.loadtxt(ifn)
+            db = DBSCAN(eps=self.eps, min_samples=1).fit(mat)
+            labels = db.labels_
+            print len(set(labels))
+            names = SuccessfulPocketList(self.subset).readLst()
+            assert(len(names) == len(labels))
+
+            groups = itertools.groupby(zip(labels, names), key=lambda t: t[0])
+            sampled_names = []
+            for _, group in groups:
+                tnames = [t[-1] for t in list(group)]
+                sampled = np.random.choice(tnames)
+                sampled_names.append(sampled)
+
+            dset = AtomicXcmsTable(self.subset).readDset()
+            sampled = dset[dset['tname'].isin(sampled_names)]
+            sampled.to_csv(self.output().path)
+
 
 def test():
     luigi.build([SuccessfulPocketList(subset="subject"),
@@ -143,6 +186,7 @@ def test():
 
 def main():
     luigi.build([SuccessfulPocketList(subset="subject"),
+                 Curate.ReSample(subset="subject"),
                  Curate.PocketSimilarityMatrix(subset="subject")],
                 local_scheduler=True)
 
