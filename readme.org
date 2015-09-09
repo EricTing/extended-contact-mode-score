@@ -79,3 +79,5 @@ Extend the application of Contact Mode Score to non-identical complexes
       2. similarity(ps-score = 0.4, Tc = 0.4) --> eps
    3. [ ] use the centroids' xcms to calculate the statistical significance
 5. curate subject
+   ./src/curate.py
+   ./src/run_curate.py
