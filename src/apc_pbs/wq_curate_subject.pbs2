@@ -28,7 +28,7 @@ if [ ! -f ${WORKDIR}/wq.py ]; then
     cp /home/${USER}/Workspace/Bitbucket/wq/wq.py ${WORKDIR}
 fi
 
-FILES=${WORKDIR}/subject_xcms_success.lst1
+FILES=${WORKDIR}/subject_xcms_success.lst2
 TASK=${WORKDIR}/run_curate.py
 
 
