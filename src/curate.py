@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 import luigi
-import itertools
 import os
 import pandas as pd
 import run_control_apoc
+from itertools import groupby
 from urls import WORKING_DIR
 from collect_xcms import AtomicXcmsTable
 from sklearn.cluster import DBSCAN
@@ -157,11 +157,11 @@ class Curate:
             mat = np.loadtxt(ifn)
             db = DBSCAN(eps=self.eps, min_samples=1).fit(mat)
             labels = db.labels_
-            print len(set(labels))
             names = SuccessfulPocketList(self.subset).readLst()
             assert(len(names) == len(labels))
 
-            groups = itertools.groupby(zip(labels, names), key=lambda t: t[0])
+            groups = groupby(sorted(zip(labels, names), key=lambda t: t[0]),
+                             key=lambda t: t[0])
             sampled_names = []
             for _, group in groups:
                 tnames = [t[-1] for t in list(group)]
