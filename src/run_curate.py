@@ -6,7 +6,9 @@ from curate import Curate
 
 def main(tname, subset):
     luigi.build([Curate.PairWisePsScore(tname=tname,
-                                        subset=subset)],
+                                        subset=subset),
+                 Curate.PairWiseTanimoto(tname=tname,
+                                         subset=subset)],
                 local_scheduler=True)
     pass
 

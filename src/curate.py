@@ -3,12 +3,14 @@
 import luigi
 import os
 import pandas as pd
-import run_control_apoc
+import numpy as np
+
+from sklearn.cluster import DBSCAN
 from itertools import groupby
+
+import run_control_apoc
 from urls import WORKING_DIR
 from collect_xcms import AtomicXcmsTable
-from sklearn.cluster import DBSCAN
-import numpy as np
 
 
 class SuccessfulPocketList(luigi.Task):
@@ -38,6 +40,18 @@ class SuccessfulPocketList(luigi.Task):
 
 class Curate:
 
+    class LpcKcombuResult(run_control_apoc.LpcKcombuResult):
+
+        def _my_midtwo(self):
+            return self.qname[1:3]
+
+        def _mydir(self):
+            return os.path.join(WORKING_DIR,
+                                self.subset,
+                                self.tname[1:3],
+                                self.tname,
+                                self._my_midtwo())
+
     class LpcApocResultTask(run_control_apoc.LpcApocResultTask):
 
         def _my_midtwo(self):
@@ -49,6 +63,47 @@ class Curate:
                                 self.tname[1:3],
                                 self.tname,
                                 self._my_midtwo())
+
+    class PairWiseTanimoto(luigi.Task):
+
+        tname = luigi.Parameter()
+        subset = luigi.Parameter()
+
+        def requires(self):
+            list_path = SuccessfulPocketList(self.subset).output().path
+            assert(os.path.exists(list_path))
+            with open(list_path, 'r') as inputObj:
+                names = inputObj.read().splitlines()
+
+            my_idx = names.index(self.tname)
+            qnames = []
+            for idx, name in enumerate(names):
+                if idx > my_idx:
+                    qnames.append(name)
+
+            return [Curate.LpcKcombuResult(self.tname, qname, self.subset)
+                    for qname in qnames]
+
+        def output(self):
+            path = os.path.join(WORKING_DIR,
+                                self.subset,
+                                self.tname[1:3],
+                                self.tname + "_tanimoto.txt")
+            return luigi.LocalTarget(path)
+
+        def _run(self):
+            with self.output().open('w') as outputObj:
+                for kcombu_task in self.requires():
+                    qname = kcombu_task.qname
+                    path = kcombu_task.output().path
+                    kcombu_parser = run_control_apoc.PkcombuAtomMatchParser(path)
+                    tanimoto = kcombu_parser.data.tanimoto
+                    outputObj.write("%s %s %f\n" % (self.tname,
+                                                    qname,
+                                                    tanimoto))
+
+        def run(self):
+            self._run()
 
     class PairWisePsScore(luigi.Task):
 
