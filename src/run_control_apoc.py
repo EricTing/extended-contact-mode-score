@@ -4,8 +4,9 @@ import luigi
 import subprocess32
 import os
 import re
+import urllib
 from Bio.PDB import PDBParser
-from urls import LPC_DIR, APOC_WORKING_DIR, APOC_BIN, KCOMBU_BIN
+from urls import LPC_DIR, APOC_WORKING_DIR, APOC_BIN, KCOMBU_BIN, PREPARE_MOL2_BIN
 from apoc_inputs import LigandExpStructureInPdb
 
 
@@ -157,6 +158,73 @@ def getPdbAtomsBySerialNum(pdb_fn, serial_nums):
     return re_ordered
 
 
+class PdbMol2(luigi.Task):
+    pdb_id = luigi.Parameter()
+
+    def _mypath(self):
+        mid_two = self.pdb_id[1:3]
+        dirname = os.path.join("/ddnB/work/jaydy/dat/pdb_mol2", mid_two)
+        os.system("mkdir -p %s" % (dirname))
+        pdb_path = os.path.join(dirname, "%s.cif" % self.pdb_id)
+        return pdb_path
+
+    def output(self):
+        return luigi.LocalTarget(self._mypath())
+
+    def run(self):
+        print "downloading %s from protein data bank" % self.pdb_id
+        url = "http://www.rcsb.org/pdb/download/downloadFile.do?fileFormat=cif&compression=NO&structureId=%s" % self.pdb_id
+        urllib.urlretrieve(url, self._mypath())
+
+
+class LigandExpStructureInMol2(luigi.Task):
+
+    ligand_code = luigi.Parameter()
+
+    def _my_pdbid(self):
+        return self.ligand_code.split('_')[0]
+
+    def _my_resn(self):
+        return self.ligand_code.split('_')[1]
+
+    def _my_chain(self):
+        return self.ligand_code.split('_')[2]
+
+    def _my_num(self):
+        return self.ligand_code.split('_')[3]
+
+    def _my_midtwo(self):
+        return self._my_pdbid()[1:3]
+
+    def _my_dir(self):
+        return os.path.join(APOC_WORKING_DIR,
+                            "mol2",
+                            self._my_midtwo(),
+                            self._my_pdbid())
+
+    def requires(self):
+        return PdbMol2(self._my_pdbid())
+
+    def output(self):
+        path = os.path.join(self._my_dir(),
+                            self.ligand_code + '.mol2')
+        return luigi.LocalTarget(path)
+
+    def run(self):
+        try:
+            os.makedirs(self._my_dir())
+        except:
+            pass
+
+        ifn = PdbMol2(self._my_pdbid()).output().path
+        ofn = self.output().path
+        cmds = [PREPARE_MOL2_BIN,
+                "--ifn", ifn,
+                "--ofn", ofn,
+                "--code", self.ligand_code]
+        subprocess32.call(cmds)
+
+
 class LpcKcombuResult(luigi.Task):
 
     tname = luigi.Parameter()
@@ -185,10 +253,8 @@ class LpcKcombuResult(luigi.Task):
         return tokens[:3]
 
     def requires(self):
-        t_tokens = self._convert(self.tname)
-        q_tokens = self._convert(self.qname)
-        return LigandExpStructureInPdb(t_tokens[0], t_tokens[1], t_tokens[2]),\
-            LigandExpStructureInPdb(q_tokens[0], q_tokens[1], q_tokens[2])
+        return [LigandExpStructureInMol2(self.tname),
+                LigandExpStructureInMol2(self.qname)]
 
     def _run_kcombu(self):
         try:

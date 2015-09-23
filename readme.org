@@ -9,8 +9,21 @@ Extend the application of Contact Mode Score to non-identical complexes
          2. [ ] Sequence similarity < 30% between the two associated proteins
          3. [ ] shaore >= 50 atmic ligand-protein contacts of same type
          4. [X] the pdb files provided by Apoc contains only C_alpha atoms
-   2. [X] should use the original pdb files in order to calcuate all-atom xcms value
-      1. use 4.5 A as the threshold for all-atom xcms calculation
+   2. [-] coordinates of the effective points
+      1. use the original pdb files to grep the coordinates
+      2. use the mixed resolution as in the CMS
+      3. use the <<<virtual effective>>> points to compensate for miss-matched residues
+         1. the contact between a ligand atom and a virtual effective point is always *None*
+      4. [-] retrieve the ligand from mmCIF file and convert to mol2 format
+         1. [X] can tag such as "3zyc_GCP_A_1749" uniquely identify a ligand from the pdb file?
+            Yes, but it is not safe.
+         2. [-] check out
+            1. [X] Python PDBx
+            2. [ ] BioPython
+            3. [X] OpenBabel c++ library
+               1. residue names become "LIG" when read by babel
+               2. [X] how babel parse the mmCIF file?
+                  got to hack the parser in babel for mmCIF in ordr to retrieve auth* fields
    3. [ ] certain ligands cannot be grepped
       e.g. 3q2k_NAD_P_500
    4. [ ] certain pdbs miss some atoms
