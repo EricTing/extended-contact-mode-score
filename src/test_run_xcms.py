@@ -2,6 +2,7 @@ import luigi
 import unittest
 import os
 from run_control_apoc import LpcKcombuResult, LigandExpStructureInMol2
+from run_control_apoc import PkcombuAtomMatchParser
 
 
 class Test(unittest.TestCase):
@@ -32,6 +33,16 @@ class Test(unittest.TestCase):
                 pass
 
         luigi.build(to_build, local_scheduler=True)
+
+    def test_c_kcombu_parser(self):
+        oam_fn = LpcKcombuResult('3vn9_ANK_A_401', '4ej7_ATP_C_401').output().path
+        parser = PkcombuAtomMatchParser(oam_fn)
+        list_a, list_b = parser.getMatchingSerialNums()
+        print len(list_a), len(list_b)
+        self.assertEqual(list_a[1], 2)
+        self.assertEqual(list_b[5], 26)
+        self.assertEqual(list_b[25], 13)
+
 
 
 if __name__ == "__main__":

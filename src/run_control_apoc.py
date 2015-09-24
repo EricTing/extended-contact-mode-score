@@ -6,7 +6,7 @@ import os
 import re
 import urllib
 from Bio.PDB import PDBParser
-from urls import LPC_DIR, APOC_WORKING_DIR, APOC_BIN, KCOMBU_BIN, PREPARE_MOL2_BIN
+from urls import LPC_DIR, APOC_WORKING_DIR, APOC_BIN, PREPARE_MOL2_BIN
 from apoc_inputs import LigandExpStructureInPdb
 
 
@@ -138,8 +138,8 @@ class PkcombuAtomMatchParser:
         for line in lines:
             if line[0].isdigit():
                 tokens = line.split()
-                list_a.append(int(tokens[1]))
-                list_b.append(int(tokens[5]))
+                list_a.append(int(tokens[2]))
+                list_b.append(int(tokens[3]))
 
         return list_a, list_b
 
@@ -262,7 +262,7 @@ class LpcKcombuResult(luigi.Task):
         except:
             pass
         inputs = [_.output().path for _ in self.requires()]
-        cmds = [KCOMBU_BIN,
+        cmds = ["pkcombu",
                 "-A", inputs[0],
                 "-B", inputs[1],
                 "-oam", self.output().path]
