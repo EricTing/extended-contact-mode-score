@@ -7,6 +7,7 @@ from run_control_apoc import PkcombuAtomMatchParser
 from run_control_apoc import LpcApocResultTask, ApocResultParer
 from run_control_apoc import LigandMatchingList, ProteinMatchingList
 from apoc_inputs import DecompressedPdb
+from mixed_resolution_xcms import MixedResolutionXcms
 
 
 class Test(unittest.TestCase):
@@ -76,39 +77,7 @@ class Test(unittest.TestCase):
 
         luigi.build(to_build, local_scheduler=True)
 
-    def test_f_xcms(self):
-        t_name = "3vn9_ANK_A_401"
-        q_name = "4ej7_ATP_C_401"
-        subset = "subject"
 
-        t_lig_path = LigandExpStructureInMol2(t_name).output().path
-        q_lig_path = LigandExpStructureInMol2(q_name).output().path
-
-        t_pdb = t_name.split('_')[0]
-        q_pdb = q_name.split('_')[0]
-
-        luigi.build([DecompressedPdb(t_pdb),
-                     DecompressedPdb(q_pdb)],
-                    local_scheduler=True)
-
-        t_prt_path = DecompressedPdb(t_pdb).output().path
-        q_prt_path = DecompressedPdb(q_pdb).output().path
-
-        lml_path = "./%s_%s.lml" % (t_name, q_name)
-        pml_path = "./%s_%s.pml" % (t_name, q_name)
-
-        cmds = ["run_xcms",
-                "--la", t_lig_path,
-                "--lb", q_lig_path,
-                "--pa", t_prt_path,
-                "--pb", q_prt_path,
-                "--lml", lml_path,
-                "--pml", pml_path]
-
-        try:
-            subprocess32.call(cmds)
-        except:
-            pass
 
 
 if __name__ == "__main__":
