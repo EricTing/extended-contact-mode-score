@@ -168,6 +168,12 @@ class PkcombuAtomMatchParser:
     def getMatchingSerialNums(self):
         return self._readPdbMatchingSerialNums()
 
+    def writeMatchingSerialNums(self, ofn):
+        list_a, list_b = self._readPdbMatchingSerialNums()
+        with open(ofn, 'w') as ofs:
+            for a, b in zip(list_a, list_b):
+                ofs.write("%d %d\n" % (a, b))
+
 
 def getPdbAtomsBySerialNum(pdb_fn, serial_nums):
     parser = PDBParser(QUIET=True)
@@ -341,6 +347,46 @@ class LpcApocResultTask(luigi.Task):
         stdout = self.run_apoc()
         with self.output().open('w') as f:
             f.write(stdout)
+
+
+class LigandMatchingList(LpcKcombuResult):
+
+    def requires(self):
+        return LpcKcombuResult(self.tname, self.qname, self.subset)
+
+    def _mypath(self):
+        path = os.path.join(self._mydir(),
+                            self.tname + "__" + self.qname + ".lml")
+        return path
+
+    def output(self):
+        return luigi.LocalTarget(self._mypath())
+
+    def run(self):
+        oam_fn = self.requires().output().path
+        parser = PkcombuAtomMatchParser(oam_fn)
+        parser.writeMatchingSerialNums(self._mypath())
+
+
+class ProteinMatchingList(LpcApocResultTask):
+
+    def requires(self):
+        return LpcApocResultTask(self.tname, self.qname, self.subset)
+
+    def _mypath(self):
+        path = os.path.join(self._mydir(),
+                            self.tname + "__" + self.qname + ".pml")
+        return path
+
+    def output(self):
+        return luigi.LocalTarget(self._mypath())
+
+    def run(self):
+        with self.requires().output().open('r') as ifs:
+            parser = ApocResultParer(ifs.read())
+            parser.writeProteinMatchingList(self.tname,
+                                            self.qname,
+                                            self._mypath())
 
 
 if __name__ == "__main__":
