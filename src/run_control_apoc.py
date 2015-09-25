@@ -128,6 +128,19 @@ class ApocResultParer:
         except:
             raise KeyError, "Can not find pockets for %s and %s" % (tname, qname)
 
+    def writeProteinMatchingList(self, tname, qname, ofn):
+        try:
+            pocket_alignment = self.queryPocket(tname, qname)
+            with open(ofn, 'w') as ofs:
+                ofs.write("%s %s\n" % (pocket_alignment.template_chainid,
+                                       pocket_alignment.query_chainid))
+                for t_res_id, q_res_id in zip(pocket_alignment.template_res,
+                                              pocket_alignment.query_res):
+                    ofs.write("%d %d\n" % (t_res_id, q_res_id))
+        except:
+            raise KeyError("cannot find pocket alignment for between %s and %s"
+                           % (tname, qname))
+
 
 class PkcombuAtomMatchParser:
     def __init__(self, oam_fn):

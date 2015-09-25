@@ -58,6 +58,10 @@ class Test(unittest.TestCase):
         self.assertEqual(pocket_alignment.template_res[5], 65)
         self.assertEqual(pocket_alignment.query_res[20], 203)
 
+        parser.writeProteinMatchingList(t_name, q_name,
+                                        "./%s_%s.pml" % (t_name, q_name))
+
+
 
 
 if __name__ == "__main__":
