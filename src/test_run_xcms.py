@@ -3,6 +3,7 @@ import unittest
 import os
 from run_control_apoc import LpcKcombuResult, LigandExpStructureInMol2
 from run_control_apoc import PkcombuAtomMatchParser
+from run_control_apoc import LpcApocResultTask, ApocResultParer
 
 
 class Test(unittest.TestCase):
@@ -42,6 +43,20 @@ class Test(unittest.TestCase):
         self.assertEqual(list_a[1], 2)
         self.assertEqual(list_b[5], 26)
         self.assertEqual(list_b[25], 13)
+
+    def test_d_apoc_parser(self):
+        t_name = "3vn9_ANK_A_401"
+        q_name = "4ej7_ATP_C_401"
+
+        to_build = [LpcApocResultTask(t_name, q_name)]
+        luigi.build(to_build, local_scheduler=True)
+
+        apoc_out = LpcApocResultTask(t_name, q_name).output().path
+        with open(apoc_out, 'r') as ifs:
+            parser = ApocResultParer(ifs.read())
+        pocket_alignment = parser.queryPocket(t_name, q_name)
+        self.assertEqual(pocket_alignment.template_res[5], 65)
+        self.assertEqual(pocket_alignment.query_res[20], 203)
 
 
 

@@ -85,6 +85,21 @@ class ApocResultParer:
             data = Data()
             data.has_pocket_alignment = False
             data.template_res, data.query_res = [], []
+
+            matching_section = re.findall(r'''Match List(.*?)Scoring parameters''',
+                                          string,
+                                          re.DOTALL)
+
+            if len(matching_section) == 1:
+                for line in matching_section[0].splitlines():
+                    tokens = line.split()
+                    if tokens and tokens[0].isdigit():
+                        data.has_pocket_alignment = True
+                        data.template_chainid = tokens[1]
+                        data.query_chainid = tokens[4]
+                        data.template_res.append(int(tokens[2]))
+                        data.query_res.append(int(tokens[5]))
+
             for line in string.splitlines():
                 if "Structure 1" in line and "Pocket:" in line:
                     data.tname = line.split()[-1].split(':')[-1]
@@ -97,13 +112,7 @@ class ApocResultParer:
                 if "RMSD" in line and "Seq identity" in line:
                     data.rmsd = float(line.split(',')[0].split()[-1])
                     data.seq_identity = float(line.split(',')[-1].split()[-1])
-                if "*" in line and "*" == line[-1] and "******" not in line:
-                    data.has_pocket_alignment = True
-                    tokens = line.split()
-                    data.template_chainid = tokens[1]
-                    data.query_chainid = tokens[4]
-                    data.template_res.append(int(tokens[2]))
-                    data.query_res.append(int(tokens[5]))
+
             key = data.tname + " " + data.qname
             self.pocket_alignmets[key] = data
 
