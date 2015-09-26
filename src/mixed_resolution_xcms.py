@@ -75,14 +75,13 @@ class MixedResolutionXcms(luigi.Task):
         self._run()
 
 
-def main():
-    t_name = "2pxx_SAH_A_301"
-    q_name = "3mq2_SAH_A_216"
-    subset = "subject"
-
-    to_build = [MixedResolutionXcms(t_name, q_name, subset)]
-    luigi.build(to_build, local_scheduler=True)
+def main(tname, qname):
+    if tname != "tname":
+        luigi.build([MixedResolutionXcms(tname, qname, "subject")],
+                    local_scheduler=True)
 
 
 if __name__ == '__main__':
-    main()
+    import sys
+    tname, qname = sys.argv[1], sys.argv[2]
+    main(tname, qname)

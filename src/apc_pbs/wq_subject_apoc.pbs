@@ -28,7 +28,7 @@ if [ ! -f ${WORKDIR}/wq.py ]; then
 fi
 
 FILES=${WORKDIR}/subject.lst
-TASK=${WORKDIR}/xcms.py
+TASK=${WORKDIR}/mixed_resolution_xcms.py
 
 
 START=1
