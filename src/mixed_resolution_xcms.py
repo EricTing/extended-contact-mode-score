@@ -46,7 +46,7 @@ class MixedResolutionXcms(luigi.Task):
 
     def output(self):
         path = os.path.join(self.mydir(),
-                            "%s_%s_mixedres.json" % (self.tname, self.qname))
+                            "%s__%s_mixedres.json" % (self.tname, self.qname))
         return luigi.LocalTarget(path)
 
     def _run(self):
