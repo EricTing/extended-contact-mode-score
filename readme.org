@@ -4,26 +4,26 @@ Extend the application of Contact Mode Score to non-identical complexes
 ** Methods
 1. Contact Matrix
    1. Corresponding residues of two binding pockets
-      1. <<<subject>>>
-         1. [ ] Ligands of two pockets have a Tc >= 0.5
-         2. [ ] Sequence similarity < 30% between the two associated proteins
-         3. [ ] shaore >= 50 atmic ligand-protein contacts of same type
+      1. [X] <<<subject>>>
+         1. [X] Ligands of two pockets have a Tc >= 0.5
+         2. [X] Sequence similarity < 30% between the two associated proteins
+         3. [X] shaore >= 50 atmic ligand-protein contacts of same type
          4. [X] the pdb files provided by Apoc contains only C_alpha atoms
-   2. [-] coordinates of the effective points
-      1. use the original pdb files to grep the coordinates
+   2. [X] coordinates of the effective points
+      1. use the pdb files downloaded from PDB to grep the proteins' residues
       2. use the mixed resolution as in the CMS
       3. use the <<<virtual effective>>> points to compensate for miss-matched residues
          1. the contact between a ligand atom and a virtual effective point is always *None*
-      4. [-] retrieve the ligand from mmCIF file and convert to mol2 format
+      4. [X] retrieve the ligand from mmCIF file and convert to mol2 format
          1. [X] can tag such as "3zyc_GCP_A_1749" uniquely identify a ligand from the pdb file?
-            Yes, but it is not safe.
-         2. [-] check out
+            Yes, but it is not safe to do so in a pdb file
+         2. [X] check out
             1. [X] Python PDBx
-            2. [ ] BioPython
+            2. [X] BioPython
             3. [X] OpenBabel c++ library
                1. residue names become "LIG" when read by babel
                2. [X] how babel parse the mmCIF file?
-                  got to hack the parser in babel for mmCIF in ordr to retrieve auth* fields
+                  hacked the parser in babel for mmCIF in ordr to retrieve auth* fields
    3. [ ] certain ligands cannot be grepped
       e.g. 3q2k_NAD_P_500
    4. [ ] certain pdbs miss some atoms
@@ -43,6 +43,7 @@ Extend the application of Contact Mode Score to non-identical complexes
          | ATOM | 1618 | CD  | GLU | A | 238 | 11.471 | -2.450 | 3.608 | 1.00 | 32.44 | C |
          | ATOM | 1619 | OE1 | GLU | A | 238 | 12.400 | -3.248 | 3.888 | 1.00 | 35.07 | O |
          | ATOM | 1620 | OE2 | GLU | A | 238 | 11.268 | -2.020 | 2.448 | 1.00 | 32.92 | O |
+      3. problem resolved if by using virtual effective points
    5. list file from apoc contains weird keys words such as "### XYM 35"
       1. original
          /ddnB/work/jaydy/dat/apoc/RS2.lst
@@ -51,6 +52,7 @@ Extend the application of Contact Mode Score to non-identical complexes
    6. Corresponding heavy atoms of two ligands
       1. Kcombu (currently used)
       2. SIMCOMP (used in Apoc paper)
+         <<<SIMCOMP>>> tend to yield higher Tc than <<<pkcombu>>>
 
 ** Pipeline
 1. Original pdb file for the complex
@@ -71,7 +73,21 @@ Extend the application of Contact Mode Score to non-identical complexes
    1. collect_xcms.AtomicXcmsCollection
    2. collect_xcms.AtomicXcmsTable
 
-** Statistical significance of xcms value
+** [#A] xCms back compatible with Cms
+The value of xCms should be <<<back-compatible>>> with Cms.
+1. materials
+   complexes in the Astext dataset
+2. methods
+   1. apply rotation and translation to each ligand
+      1. to calculate Cms for each complex
+         1. calculate the Cms between the variational conformations and the native conformation
+      2. to calculate xCms for eac complex
+         1. use Lpc to find the pocket residues
+         2. add virtual points to the pocket residues
+         3. calculate the xCms between the variational conformations and the native conformation
+   
+
+** [#B] Statistical significance of xcms value
 *** Run on a random dataset
 1. Random set (<<<RS2>>>) from Apoc
    /ddnB/work/jaydy/dat/apoc/RS2.lst/ddnB/work/jaydy/dat/apoc/RS2_valid.lst
