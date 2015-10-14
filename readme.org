@@ -82,9 +82,20 @@ The value of xCms should be <<<back-compatible>>> with Cms.
       1. to calculate Cms for each complex
          1. calculate the Cms between the variational conformations and the native conformation
       2. to calculate xCms for eac complex
-         1. use Lpc to find the pocket residues
-         2. add virtual points to the pocket residues
-         3. calculate the xCms between the variational conformations and the native conformation
+         1. find the neighboring residues in contact with ligand atoms
+         2. align the neighboring residues using Apoc
+         3. for the matching residues from Apoc, add virtual points
+         4. calculate the xCms between the variational conformations and the native conformation
+
+** [#A] Statistical significance of cms
+1. run MC for each complex in astex with weak constraints
+   1. vdw * 1.0
+   2. edst * 0.01
+2. cluster the conformations based on their translational and rotational vector
+   1. using DBSCN
+3. pick the centroid from each cluster
+4. calculate CMS between the centroids
+5. calculate p-value
    
 
 ** [#B] Statistical significance of xcms value
