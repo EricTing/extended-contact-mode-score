@@ -38,7 +38,8 @@ class PairwiseCms(SampleConf):
 
         sdfs = glob(regx)
         with open(self.output().path, 'w') as ofs:
-            for i in range(100):
+            count = 0
+            while count < 100:
                 sdf1 = random.choice(sdfs)
                 sdf2 = random.choice(sdfs)
                 cmds = ['cms', '-frc',
@@ -49,6 +50,7 @@ class PairwiseCms(SampleConf):
                 try:
                     stdout = subprocess32.check_output(cmds)
                     ofs.write(stdout)
+                    count += 1
                 except:
                     pass
 
