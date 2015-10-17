@@ -2,7 +2,7 @@
 #######################################################################
 # Begin WQ prologue section.
 #######################################################################
-#PBS -l nodes=4:ppn=16
+#PBS -l nodes=1:ppn=16
 #PBS -l walltime=10:00:00
 #PBS -A hpc_lasigma
 #PBS -q lasigma
@@ -18,7 +18,7 @@
 # 2 threads per task, so:
 
 
-WPN=1
+WPN=16
 
 # Set the working directory:
 export WORKDIR=/ddnB/work/jaydy/working
