@@ -18,7 +18,7 @@
 # 2 threads per task, so:
 
 
-WPN=16
+WPN=1
 
 # Set the working directory:
 export WORKDIR=/ddnB/work/jaydy/working
