@@ -29,7 +29,7 @@ if [ ! -f ${WORKDIR}/wq.py ]; then
 fi
 
 FILES=${WORKDIR}/astex_sdf.lst
-TASK=${WORKDIR}/sample_confs.py
+TASK=${WORKDIR}/cms_vals_for_p_val.py
 
 
 START=1
