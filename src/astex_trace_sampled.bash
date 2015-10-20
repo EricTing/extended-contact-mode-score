@@ -21,7 +21,7 @@ nor_a_file=${parameter_dir}/08_nor_a
 nor_b_file=${parameter_dir}/08_nor_b
 para_file=${parameter_dir}/paras
 
-trace_file=$WORKING_DIR/${complex}_kmeans.csv
+trace_file=$WORKING_DIR/${complex}_grid.csv
 
 mkdir -p $WORKING_DIR
 conf_file=$WORKING_DIR/${complex}_new

@@ -39,7 +39,7 @@ class PairwiseCms(SampleConf):
         sdfs = glob(regx)
         with open(self.output().path, 'w') as ofs:
             count = 0
-            while count < 100:
+            while count < 200:
                 sdf1 = random.choice(sdfs)
                 sdf2 = random.choice(sdfs)
                 cmds = ['cms', '-frc',

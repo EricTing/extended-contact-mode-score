@@ -4,11 +4,13 @@ import os
 import pandas as pd
 import numpy as np
 import luigi
+import random
 
 
 class SampleConf(luigi.Task):
 
     sdf_id = luigi.Parameter()
+    radius = luigi.Parameter(default=8.0)
 
     def dirname(self):
         return "/ddnB/work/jaydy/working/astex_weak"
@@ -28,23 +30,19 @@ class SampleConf(luigi.Task):
                            self.sdf_id + ".csv")
 
         dset = pd.read_csv(ifn, sep=' ', index_col=False)
-        total_samples = 20000
-        if len(dset > total_samples):
-            rows = np.random.choice(dset.index.values, total_samples)
-            dset = dset.ix[rows]
 
-        xg = np.linspace(dset.t0.min(), dset.t0.max(), 10)
-        yg = np.linspace(dset.t1.min(), dset.t1.max(), 10)
-        zg = np.linspace(dset.t2.min(), dset.t2.max(), 10)
+        def calculateDist2Center():
+                vals = dset[['t0', 't1', 't2']].values
+                return np.sqrt(np.sum(np.multiply(vals, vals), axis=1))
 
-        dx = xg[1] - xg[0]
-        dy = yg[1] - yg[0]
-        dz = zg[1] - zg[0]
+        dset['dst'] = calculateDist2Center()
+        dset = dset[dset['dst'] < self.radius]
 
+        dx, dy, dz = [0.1] * 3
         grid_pts_with_confs = pd.DataFrame()
-        for x in xg:
-            for y in yg:
-                for z in zg:
+        for x in np.arange(dset.t0.min(), dset.t0.max(), dx):
+            for y in np.arange(dset.t1.min(), dset.t1.max(), dx):
+                for z in np.arange(dset.t2.min(), dset.t2.max(), dx):
                     mydset = dset[(dset.t0 > x)
                                   & (dset.t0 < x + dx)
                                   & (dset.t1 > y)
@@ -53,11 +51,13 @@ class SampleConf(luigi.Task):
                                   & (dset.t2 < z + dz)]
                     if len(mydset) > 0:
                         mydset.index = range(len(mydset))
-                        grid_pts_with_confs = pd.concat([grid_pts_with_confs, mydset.ix[[0]]])
+                        grid_pts_with_confs = pd.concat([grid_pts_with_confs,
+                                                         mydset.ix[[random.choice(mydset.index)]]])
 
-        num_clusters = 100
+        num_clusters = 500
         if len(grid_pts_with_confs) > num_clusters:
-            rows = np.random.choice(grid_pts_with_confs.index.values, num_clusters)
+            rows = np.random.choice(grid_pts_with_confs.index.values,
+                                    num_clusters)
             grid_pts_with_confs = grid_pts_with_confs.ix[rows]
 
         cols = dset.columns
