@@ -98,7 +98,7 @@ def check(sdf_id):
 
 if __name__ == '__main__':
     import sys
-    # pdb_id = sys.argv[1]
-    # main(pdb_id)
-    sdf_id = sys.argv[1]
-    check(sdf_id)
+    pdb_id = sys.argv[1]
+    main(pdb_id)
+    # sdf_id = sys.argv[1]
+    # check(sdf_id)
