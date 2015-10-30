@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import luigi
+import pybel
 import json
 import pandas as pd
 from cms_vals_for_p_val import PairwiseCms
 from sample_confs import SampleConf
+from vina import Path
 
 
 class CollectGridCms(luigi.Task):
@@ -37,6 +39,31 @@ class CollectGridCms(luigi.Task):
             ofs.write(to_write)
 
 
+class ComplexSizes(CollectGridCms):
+
+    def output(self):
+        path = "../dat/astex_sz.csv"
+        return luigi.LocalTarget(path)
+
+    def requires(self):
+        pass
+
+    def run(self):
+        data = {}
+        for sdf_id in self.getSdfs():
+            path = Path(sdf_id)
+            lig = pybel.readfile('sdf', path.astex_sdf()).next()
+            lig.removeh()
+            prt = pybel.readfile('pdb', path.astex_pdb()).next()
+            prt.removeh()
+            lig_sz = len(lig.atoms)
+            prt_sz = len(prt.atoms)
+            data[sdf_id] = {"lig_sz": lig_sz,
+                            "prt_sz": prt_sz}
+        dset = pd.DataFrame(data)
+        dset.to_csv(self.output().path)
+
+
 class CollectGridDsets(CollectGridCms):
 
     def requires(self):
@@ -62,7 +89,9 @@ class CollectGridDsets(CollectGridCms):
 
 
 def main():
-    luigi.build([CollectGridCms(), CollectGridDsets()],
+    luigi.build([CollectGridCms(),
+                 CollectGridDsets(),
+                 ComplexSizes()],
                 local_scheduler=True)
     pass
 
