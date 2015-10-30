@@ -89,22 +89,27 @@ The value of xCms should be <<<back-compatible>>> with Cms.
 
 ** [#A] Statistical significance of cms
 1. run MC for each complex in astex with weak constraints
-   1. vdw * 1.0
-   2. edst * 0.01
+   1. vdw * 0.5
 2. cluster the conformations based on their translational and rotational vector
-   1. experiment with DBSCAN
+   1. [X] experiment with DBSCAN
       1. do not use DBSCAN becuase it removes the outliers
-   2. experiment with KMeans
+   2. [X] experiment with KMeans
       1. Kmeans maintain the density distribution as the original ponts
    3. experiment with the grid method
       1. [X] grid method provides evenly distributed points
-5. calculate pair-wise p-value
+3. calculate pair-wise p-value
+4. sample
+   1. [X] stratefied sampling
+      Assume that the # of grid cells is n,
+      the # of samples from each complex is \propto to n^2
+5. [ ] analyze the distribution of the cms values
    
 
 ** [#B] Statistical significance of xcms value
 *** Run on a random dataset
 1. Random set (<<<RS2>>>) from Apoc
-   /ddnB/work/jaydy/dat/apoc/RS2.lst/ddnB/work/jaydy/dat/apoc/RS2_valid.lst
+   /ddnB/work/jaydy/dat/apoc/RS2.lst
+   /ddnB/work/jaydy/dat/apoc/RS2_valid.lst
 2. script
    ./src/run_lpc_randomset.py
 3. [X] run time errors

@@ -38,21 +38,26 @@ class PairwiseCms(SampleConf):
 
         sdfs = glob(regx)
         with open(self.output().path, 'w') as ofs:
-            count = 0
-            while count < 200:
-                sdf1 = random.choice(sdfs)
-                sdf2 = random.choice(sdfs)
-                cmds = ['cms', '-frc',
-                        '--lig1', sdf1,
-                        '--lig2', sdf2,
-                        '--prt1', pdb_path,
-                        '--prt2', pdb_path]
-                try:
-                    stdout = subprocess32.check_output(cmds)
-                    ofs.write(stdout)
-                    count += 1
-                except:
-                    pass
+            if len(sdfs) > 0:
+                count = 0
+                while count < len(sdfs) * len(sdfs) / 20:
+                    sdf1 = random.choice(sdfs)
+                    sdf2 = random.choice(sdfs)
+                    cmds = ['cms', '-frc',
+                            '--lig1', sdf1,
+                            '--lig2', sdf2,
+                            '--prt1', pdb_path,
+                            '--prt2', pdb_path]
+                    if sdf1 == sdf2:
+                        print " ".join(cmds)
+                    try:
+                        stdout = subprocess32.check_output(cmds)
+                        ofs.write(stdout)
+                        count += 1
+                    except:
+                        pass
+            else:
+                pass
 
 
 def main(sdf):
