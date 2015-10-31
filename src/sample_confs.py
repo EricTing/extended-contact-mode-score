@@ -55,38 +55,26 @@ class SampleConf(luigi.Task):
             dset = dset[dset['dst'] < self.maximum_radius]
 
             dx, dy, dz = [2.0] * 3
-            d_angle = 1.256        # 72 degree
             grid_cell_dset = pd.DataFrame(columns=dset.columns)
 
             x_grids = np.arange(dset.t0.min() - 0.1, dset.t0.max() + 0.1, dx)
             y_grids = np.arange(dset.t1.min() - 0.1, dset.t1.max() + 0.1, dy)
             z_grids = np.arange(dset.t2.min() - 0.1, dset.t2.max() + 0.1, dz)
-            r0_grids = np.arange(dset.r0.min() - 0.1, dset.r0.max() + 0.1, d_angle)
-            r1_grids = np.arange(dset.r1.min() - 0.1, dset.r1.max() + 0.1, d_angle)
-            r2_grids = np.arange(dset.r2.min() - 0.1, dset.r2.max() + 0.1, d_angle)
 
             for x in x_grids:
                 for y in y_grids:
                     for z in z_grids:
-                        for r0 in r0_grids:
-                            for r1 in r1_grids:
-                                for r2 in r2_grids:
-                                    mydset = dset[(dset.t0 > x)
-                                                  & (dset.t0 < x + dx)
-                                                  & (dset.t1 > y)
-                                                  & (dset.t1 < y + dy)
-                                                  & (dset.t2 > z)
-                                                  & (dset.t2 < z + dz)
-                                                  & (dset.r0 > r0)
-                                                  & (dset.r0 < r0 + d_angle)
-                                                  & (dset.r1 > r1)
-                                                  & (dset.r1 < r1 + d_angle)
-                                                  & (dset.r2 > r2)
-                                                  & (dset.r2 < r2 + d_angle)]
-                                    if len(mydset) > 0:
-                                        mydset.index = range(len(mydset))
-                                        grid_cell_dset = pd.concat([grid_cell_dset,
-                                                                    mydset.ix[[random.choice(mydset.index)]]])
+                        mydset = dset[(dset.t0 > x) &
+                                      (dset.t0 < x + dx) &
+                                      (dset.t1 > y) &
+                                      (dset.t1 < y + dy) &
+                                      (dset.t2 > z) &
+                                      (dset.t2 < z + dz)]
+                        if len(mydset) > 0:
+                            mydset.index = range(len(mydset))
+                            rnd_idx = random.choice(mydset.index)
+                            grid_cell_dset = pd.concat([grid_cell_dset,
+                                                        mydset.ix[[rnd_idx]]])
 
             grid_cell_dset.index = range(len(grid_cell_dset))
             ofn = self.output().path
