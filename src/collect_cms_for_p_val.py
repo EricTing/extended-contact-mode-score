@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import luigi
+import os
 import pybel
 import json
 import pandas as pd
+import numpy as np
 from cms_vals_for_p_val import PairwiseCms
 from sample_confs import SampleConf
 from vina import Path
@@ -19,7 +21,7 @@ class CollectGridCms(luigi.Task):
         return [PairwiseCms(sdf) for sdf in sdfs]
 
     def output(self):
-        path = "../dat/astex_grid_cms.json"
+        path = "../dat/astex_grid_tra_cms.json"
         return luigi.LocalTarget(path)
 
     def run(self):
@@ -31,8 +33,23 @@ class CollectGridCms(luigi.Task):
                 cms_lines = filter(lambda line: "cms value" in line, lines)
                 cms_valus = map(lambda line: float(line.split()[-1]),
                                 cms_lines)
-                if len(cms_valus) > 0:
-                    dset[sdf_id] = cms_valus
+                fraction_lines = filter(lambda line: "fraction value" in line,
+                                        lines)
+                fraction_valus = map(lambda line: float(line.split()[-1]),
+                                     fraction_lines)
+                rmsd_lines = filter(lambda line: "rmsd value" in line,
+                                    lines)
+                rmsd_valus = map(lambda line: float(line.split()[-1]),
+                                 rmsd_lines)
+
+                data = {}
+                if (len(cms_valus) > 0 and
+                    len(rmsd_valus) > 0 and
+                    len(fraction_valus))> 0:
+                    data['cms'] = cms_valus
+                    data['fraction'] = fraction_valus
+                    data['rmsd'] = rmsd_valus
+                dset[sdf_id] = data
 
         to_write = json.dumps(dset, indent=4, separators=(',', ': '))
         with open(self.output().path, 'w') as ofs:
@@ -64,6 +81,35 @@ class ComplexSizes(CollectGridCms):
         dset.to_csv(self.output().path)
 
 
+class LooseLigands(CollectGridCms):
+
+    def requires(self):
+        pass
+
+    def output(self):
+        path = "../dat/loose_ligs.json"
+        return luigi.LocalTarget(path)
+
+    def run(self):
+        loose_ligs = []
+        for sdf_id in self.getSdfs():
+            sample_job = SampleConf(sdf_id, minimum_radius=10.0)
+            ifn = os.path.join(sample_job.dirname(),
+                               sample_job.sdf_id,
+                               sample_job.sdf_id + ".csv")
+
+            dset = pd.read_csv(ifn, sep=' ', index_col=False)
+
+            vals = dset[['t0', 't1', 't2']].values
+            dst = np.sqrt(np.sum(np.multiply(vals, vals), axis=1))
+            if dst.max() > sample_job.minimum_radius:
+                loose_ligs.append(sdf_id)
+
+        to_write = json.dumps(loose_ligs, indent=4, separators=(',', ': '))
+        with open(self.output().path, 'w') as ofs:
+            ofs.write(to_write)
+
+
 class CollectGridDsets(CollectGridCms):
 
     def requires(self):
@@ -71,7 +117,7 @@ class CollectGridDsets(CollectGridCms):
         return [SampleConf(sdf) for sdf in sdfs]
 
     def output(self):
-        path = "../dat/astex_grid_dsets.csv"
+        path = "../dat/astex_grid_tra_dsets.csv"
         return luigi.LocalTarget(path)
 
     def run(self):
@@ -91,6 +137,7 @@ class CollectGridDsets(CollectGridCms):
 def main():
     luigi.build([CollectGridCms(),
                  CollectGridDsets(),
+                 LooseLigands(),
                  ComplexSizes()],
                 local_scheduler=True)
     pass
