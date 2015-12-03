@@ -10,6 +10,7 @@ from xcms import LpcApocXcms
 from apoc_inputs import ApocListPathTask
 from run_control_apoc import LpcApocResultTask, ApocResultParer
 from mixed_resolution_xcms import MixedResolutionXcms
+from disasembling import ApocRandomSet2
 
 
 class ApocPocketsResultsCollection(luigi.Task):
@@ -197,17 +198,36 @@ class MixedResolutionXcmsTable(AtomicXcmsTable):
         return luigi.LocalTarget(csv_path)
 
 
+class CollectXcmsApocRS2(luigi.Task):
+
+    def requires(self):
+        return ApocListPathTask("rs2")
+
+    def run(self):
+        rs2_lst = self.requires().output().path
+        data = []
+        for tname, qname in [line.split() for line in file(rs2_lst)]:
+            rs2_task = ApocRandomSet2(tname, qname)
+            result_path = rs2_task.output().path
+            if os.path.exists(result_path):
+                with open(result_path, 'r') as ifs:
+                    cms_line = next((l for l in ifs.readlines()
+                                     if 'Extended CMS' in l),
+                                    None)
+                    if cms_line is not None:
+                        key = tname + "__" + qname
+                        val = float(cms_line.split()[-1])
+                        data.append((key, val))
+        dset = pd.DataFrame(data)
+        dset.to_csv(self.output().path)
+
+    def output(self):
+        path = "../dat/rs2_xcms.csv"
+        return luigi.LocalTarget(path)
+
 
 def main():
-    luigi.build([AtomicXcmsCollection("subject"),
-                 MixedResolutionXcmsTable("subject"),
-                 MixedResolutionXcmsTable("control"),
-                 # AtomicXcmsCollection("rs2"),
-                 AtomicXcmsTable("subject")],
-                 # ApocListPathTask("rs2"),
-                 # ApocPocketsResultsCollection("rs2"),
-                 # ApocPocketsResultsTable("rs2"),
-                 # AtomicXcmsTable("rs2")],
+    luigi.build([CollectXcmsApocRS2()],
                 local_scheduler=True)
 
 

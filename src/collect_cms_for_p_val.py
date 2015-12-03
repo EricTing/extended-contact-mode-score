@@ -6,8 +6,8 @@ import pybel
 import json
 import pandas as pd
 import numpy as np
-from cms_vals_for_p_val import PairwiseCms
-from sample_confs import SampleConf
+from cms_vals_for_p_val import PairwiseCms, PairwiseCmsEvenlyDistributed
+from sample_confs import SampleConf, EvenlySampleConf
 from vina import Path
 
 
@@ -56,6 +56,17 @@ class CollectGridCms(luigi.Task):
             ofs.write(to_write)
 
 
+class CollectGridCmsEven(CollectGridCms):
+
+    def requires(self):
+        sdfs = self.getSdfs()
+        return [PairwiseCmsEvenlyDistributed(sdf) for sdf in sdfs]
+
+    def output(self):
+        path = "../dat/astex_grid_even_cms.json"
+        return luigi.LocalTarget(path)
+
+
 class ComplexSizes(CollectGridCms):
 
     def output(self):
@@ -93,7 +104,7 @@ class LooseLigands(CollectGridCms):
     def run(self):
         loose_ligs = []
         for sdf_id in self.getSdfs():
-            sample_job = SampleConf(sdf_id, minimum_radius=10.0)
+            sample_job = SampleConf(sdf_id, minimum_radius=8.0)
             ifn = os.path.join(sample_job.dirname(),
                                sample_job.sdf_id,
                                sample_job.sdf_id + ".csv")
@@ -108,6 +119,30 @@ class LooseLigands(CollectGridCms):
         to_write = json.dumps(loose_ligs, indent=4, separators=(',', ': '))
         with open(self.output().path, 'w') as ofs:
             ofs.write(to_write)
+
+
+class CollectGridDsetsEven(CollectGridCms):
+
+    def requires(self):
+        sdfs = self.getSdfs()
+        return [EvenlySampleConf(sdf) for sdf in sdfs]
+
+    def output(self):
+        path = "../dat/astex_grid_even_dsets.csv"
+        return luigi.LocalTarget(path)
+
+    def run(self):
+        all_dsets = pd.DataFrame()
+        for job in self.requires():
+            ifn = job.output().path
+            lines = [_ for _ in file(ifn)]
+            if len(lines) > 0:
+                dset = pd.read_csv(ifn, sep=' ', index_col=None)
+                if len(dset) < 100:
+                    print job.sdf_id, len(dset)
+                all_dsets = pd.concat([all_dsets, dset])
+
+        all_dsets.to_csv(self.output().path)
 
 
 class CollectGridDsets(CollectGridCms):
@@ -135,10 +170,14 @@ class CollectGridDsets(CollectGridCms):
 
 
 def main():
-    luigi.build([CollectGridCms(),
-                 CollectGridDsets(),
-                 LooseLigands(),
-                 ComplexSizes()],
+    luigi.build([
+        CollectGridCms(),
+        CollectGridDsets(),
+        LooseLigands(),
+        ComplexSizes(),
+        CollectGridDsetsEven(),
+        CollectGridCmsEven(),
+    ],
                 local_scheduler=True)
     pass
 
