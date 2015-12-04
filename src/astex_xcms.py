@@ -33,11 +33,12 @@ class Path(luigi.Task):
 
 
 def runPkcombu(a_path, b_path, oam_path):
+    FNULL = open(os.devnull, 'w')
     cmds = ["pkcombu",
             "-A", a_path,
             "-B", b_path,
             "-oam", oam_path]
-    subprocess32.call(cmds)
+    subprocess32.call(cmds, stdout=FNULL, stderr=subprocess32.STDOUT)
 
 
 class AstexXcmsBackCompatibility(Path):

@@ -154,6 +154,9 @@ class PkcombuAtomMatchParser:
             if "tanimoto" in line:
                 self.data.tanimoto = float(line.split()[-1])
 
+    def getTc(self):
+        return self.data.tanimoto
+
     def _readPdbMatchingSerialNums(self):
         lines = self.content.splitlines()
         list_a, list_b = [], []
