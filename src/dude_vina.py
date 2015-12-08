@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import os
 import pybel
 import json
@@ -25,7 +27,7 @@ class CheckNames(luigi.Task):
                     assert lig == prt[:-1]
                     names.append(prt + "\n")
                 except Exception as inst:
-                    print inst
+                    print(inst)
 
         with open(self.output().path, 'w') as ofs:
             ofs.writelines(names)
@@ -153,47 +155,54 @@ class Calculate(luigi.Task):
                 crystal_lig_sdf = LigSdf(prt_id).getSdfPath()
 
                 oam_path = os.path.splitext(fn)[0] + '.oam'
+
                 runPkcombu(lig_sdf, crystal_lig_sdf, oam_path)
-                lml_path = os.path.splitext(fn)[0] + '.lml'
-                kcombu = PkcombuAtomMatchParser(oam_path)
-                kcombu.writeMatchingSerialNums(lml_path)
-                tc = kcombu.getTc()
-                list_a, list_b = kcombu.getMatchingSerialNums()
-
-                crystal_prt_pdb = PrtPdb(prt_id).getPdbPath()
-                cmds = ['run_xcms',
-                        '--la', lig_sdf,
-                        '--lb', crystal_lig_sdf,
-                        '--pa', crystal_prt_pdb,
-                        '--pb', crystal_prt_pdb,
-                        '--lml', lml_path]
-
-                lig_id = os.path.basename(lig_sdf)
-                results[prt_id][lig_id] = {
-                    'Tc': tc,
-                    'dude_ligand_indices': list_a,
-                    'crystal_ligand_indices': list_b,
-                }
 
                 try:
-                    xcms_result = subprocess32.check_output(cmds)
-                    print xcms_result
-                    for line in xcms_result.splitlines():
-                        if 'PS-score' in line:
-                            ps_score = float(line.split(':')[-1])
-                            results[prt_id][lig_id].update(
-                                {'ps-score': ps_score})
-                        if 'residue list of the first protein' in line:
-                            prt_contact_indices = map(
-                                int, line.split(':')[-1].split())
-                            results[prt_id][lig_id].update(
-                                {'dude_contact_indices': prt_contact_indices})
-                        if 'Extended CMS' in line:
-                            xcms_val = float(line.split()[-1])
-                            results[prt_id][lig_id].update({'xcms': xcms_val})
-                except:
-                    print(" ".join(cmds))
-                    results[prt_id][lig_id].update({'xcms': None})
+                    lml_path = os.path.splitext(fn)[0] + '.lml'
+                    kcombu = PkcombuAtomMatchParser(oam_path)
+                    kcombu.writeMatchingSerialNums(lml_path)
+                    tc = kcombu.getTc()
+                    list_a, list_b = kcombu.getMatchingSerialNums()
+
+                    crystal_prt_pdb = PrtPdb(prt_id).getPdbPath()
+                    cmds = ['run_xcms',
+                            '--la', lig_sdf,
+                            '--lb', crystal_lig_sdf,
+                            '--pa', crystal_prt_pdb,
+                            '--pb', crystal_prt_pdb,
+                            '--lml', lml_path]
+
+                    lig_id = os.path.basename(lig_sdf)
+                    results[prt_id][lig_id] = {
+                        'Tc': tc,
+                        'dude_ligand_indices': list_a,
+                        'crystal_ligand_indices': list_b,
+                    }
+
+                    try:
+                        xcms_result = subprocess32.check_output(cmds)
+                        for line in xcms_result.splitlines():
+                            if 'PS-score' in line:
+                                ps_score = float(line.split(':')[-1])
+                                results[prt_id][lig_id].update(
+                                    {'ps-score': ps_score})
+                            if 'residue list of the first protein' in line:
+                                prt_contact_indices = map(
+                                    int, line.split(':')[-1].split())
+                                results[prt_id][lig_id].update(
+                                    {'dude_contact_indices': prt_contact_indices})
+                            if 'Extended CMS' in line:
+                                xcms_val = float(line.split()[-1])
+                                results[prt_id][lig_id].update({'xcms': xcms_val})
+                    except:
+                        print(" ".join(cmds))
+                        results[prt_id][lig_id].update({'xcms': None})
+                        pass
+
+                except Exception as inst:
+                    print(inst)
+                    pass
 
         runXcms()
         to_write = json.dumps(results, sort_keys=True,
