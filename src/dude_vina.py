@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import os
+import shutil
 import pybel
 import json
 import luigi
@@ -144,21 +145,26 @@ class Calculate(luigi.Task):
 
         def runXcms():
             for fn in pdbqt_fns:
-                lig_sdf = os.path.splitext(fn)[0] + '.sdf'
-
-                if not os.path.exists(lig_sdf):
-                    lig = pybel.readfile("pdbqt", fn).next()
-                    lig.removeh()
-                    lig.write(format="sdf", filename=lig_sdf)
-
-                prt_id = os.path.split(fn)[-1].split('-')[0]
-                crystal_lig_sdf = LigSdf(prt_id).getSdfPath()
-
-                oam_path = os.path.splitext(fn)[0] + '.oam'
-
-                runPkcombu(lig_sdf, crystal_lig_sdf, oam_path)
-
                 try:
+                    lig_sdf = os.path.splitext(fn)[0] + '.sdf'
+
+                    if not os.path.exists(lig_sdf):
+                        cmds = ['obabel', '-ipdbqt', fn,
+                                '-osdf', '-O', lig_sdf]
+                        subprocess32.call(cmds)
+                        # only the first conformer is needed
+                        lig = pybel.readfile("sdf", lig_sdf).next()
+                        lig.removeh()
+                        lig.write(format="sdf",
+                                  filename=lig_sdf, overwrite=True)
+
+                    prt_id = os.path.split(fn)[-1].split('-')[0]
+                    crystal_lig_sdf = LigSdf(prt_id).getSdfPath()
+
+                    oam_path = os.path.splitext(fn)[0] + '.oam'
+
+                    runPkcombu(lig_sdf, crystal_lig_sdf, oam_path)
+
                     lml_path = os.path.splitext(fn)[0] + '.lml'
                     kcombu = PkcombuAtomMatchParser(oam_path)
                     kcombu.writeMatchingSerialNums(lml_path)
@@ -209,6 +215,7 @@ class Calculate(luigi.Task):
                               indent=4, separators=(',', ': '))
         with open(self.output().path, 'a') as ofs:
             ofs.write(to_write)
+        shutil.rmtree(untared_dir)
 
 
 def main(task_name):
