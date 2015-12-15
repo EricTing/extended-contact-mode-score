@@ -222,11 +222,12 @@ class PairwiseDisSimilaritySpearman(PairwiseDisSimilarity):
         pdb = my_path.astex_pdb()
         native_sdf = my_path.astex_sdf()
 
-        ligs = [readLigCoords(sdf) for sdf in sdfs]
         prt = readPrtCoords(pdb)
         native_lig = readLigCoords(native_sdf)
         native_vec = contactVector(native_lig, prt)
-        for lig in ligs:
+        for sdf in sdfs:
+            sdf_id = os.path.basename(sdf)
+            lig = readLigCoords(sdf)
             vec = contactVector(lig, prt)
             max_pmf = 7.38 + 0.1
             neighboring_vec, neighboring_native_vec = [], []
@@ -255,6 +256,7 @@ class PairwiseDisSimilaritySpearman(PairwiseDisSimilarity):
                 data['neighboring_spearmanr'].append(n_spearman_corr.correlation)
                 data['neighboring_spearmanr_p_val'].append(n_spearman_corr.pvalue)
                 data['contact_pairs'].append(len(neighboring_vec))
+                data['sdf_id'] = sdf_id
 
         to_write = json.dumps(data, sort_keys=True,
                               indent=4, separators=(',', ': '))
