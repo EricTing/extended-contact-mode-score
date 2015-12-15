@@ -7,6 +7,7 @@ import json
 import pandas as pd
 from single_complex_cms import PairwiseDisSimilarity, MyPath
 from single_complex_cms import PairwiseDisSimilaritySpearman
+from single_complex_cms import ProgressivePairwiseDisSimilarity
 
 
 class GyrationSize(luigi.Task):
@@ -76,6 +77,18 @@ class CollectPairwiseDisSimilaritySpearman(CollectPairwiseDisSimilarity):
         all_dset.to_csv(self.output().path)
 
 
+class CollecProgressivePairwiseDisSimilarity(CollectPairwiseDisSimilaritySpearman):
+    def requires(self):
+        return [ProgressivePairwiseDisSimilarity(sdf, 0.2,
+                                                 max_rot_angle=0.314,
+                                                 num_samples=30)
+                for sdf in self.getSdfIds()]
+
+    def output(self):
+        path = os.path.join("../dat/progressive_spearmanr.csv")
+        return luigi.LocalTarget(path)
+
+
 def main():
     luigi.build([
         CollectPairwiseDisSimilarity(5.0),
@@ -85,6 +98,7 @@ def main():
         CollectPairwiseDisSimilarity(20.0),
         GyrationSize(),
         CollectPairwiseDisSimilaritySpearman(10.68),
+        CollecProgressivePairwiseDisSimilarity(10.68),
     ],
                 local_scheduler=True)
 

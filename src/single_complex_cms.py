@@ -75,6 +75,24 @@ class VariousBoxSizeCms(luigi.Task):
         dset.to_csv(self.output().path, sep=' ', index=False)
 
 
+class ProgressivelyPerturbation(VariousBoxSizeCms):
+    def run(self):
+        data = []
+        for perturbation_time in range(self.num_samples):
+            tra_vec = np.random.uniform(-self.half_box_size(),
+                                        self.half_box_size(),
+                                        3) * perturbation_time
+            rot_vec = np.random.uniform(-self.max_rot_angle,
+                                        self.max_rot_angle,
+                                        3) * perturbation_time
+            conf_nums = [0, 0]
+            data.append(np.hstack((conf_nums, tra_vec, rot_vec)))
+
+        cols = ['lig', 'prt', 't0', 't1', 't2', 'r0', 'r1', 'r2']
+        dset = pd.DataFrame(data, columns=cols)
+        dset.to_csv(self.output().path, sep=' ', index=False)
+
+
 class PairwiseDisSimilarity(VariousBoxSizeCms):
 
     def requires(self):
@@ -256,12 +274,23 @@ class PairwiseDisSimilaritySpearman(PairwiseDisSimilarity):
                 data['neighboring_spearmanr'].append(n_spearman_corr.correlation)
                 data['neighboring_spearmanr_p_val'].append(n_spearman_corr.pvalue)
                 data['contact_pairs'].append(len(neighboring_vec))
-                data['sdf_id'] = sdf_id
+                data['sdf_id'].append(sdf_id)
+                data['lig_size'].append(len(lig))
+                data['prt_pt_size'].append(len(neighboring_native_vec) / float(len(lig)))
 
         to_write = json.dumps(data, sort_keys=True,
                               indent=4, separators=(',', ': '))
         with open(self.output().path, 'w') as ofs:
             ofs.write(to_write)
+
+
+class ProgressivePairwiseDisSimilarity(PairwiseDisSimilaritySpearman):
+    def requires(self):
+        return ProgressivelyPerturbation(self.sdf_id,
+                                         self.box_size,
+                                         num_cms_vals=self.num_cms_vals,
+                                         max_rot_angle=self.max_rot_angle,
+                                         num_samples=self.num_samples)
 
 
 def main(sdf):
@@ -270,6 +299,9 @@ def main(sdf):
         # PairwiseDisSimilarity(sdf, 10.0),
         PairwiseDisSimilarity(sdf, 10.68, num_cms_vals=1000, num_samples=500),
         PairwiseDisSimilaritySpearman(sdf, 10.68, num_samples=100),
+        ProgressivePairwiseDisSimilarity(sdf, 0.2,
+                                         max_rot_angle=0.314,
+                                         num_samples=30),
         # PairwiseDisSimilarity(sdf, 15.0),
         # PairwiseDisSimilarity(sdf, 20.0)
     ],
