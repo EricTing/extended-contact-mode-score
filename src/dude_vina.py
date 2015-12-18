@@ -310,7 +310,7 @@ class SpearmanR(Calculate):
                     print("%s FAILS" % (fn), file=sys.stderr)
                     pass
 
-                return results
+            return results
 
         results = runSpearmanR()
         to_write = json.dumps(results, sort_keys=True,
