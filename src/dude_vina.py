@@ -8,6 +8,7 @@ import pybel
 import json
 import luigi
 import subprocess32
+import pandas as pd
 from collections import defaultdict
 
 from run_control_apoc import PkcombuAtomMatchParser
@@ -229,6 +230,15 @@ class SpearmanR(Calculate):
         path = os.path.join("/work/jaydy/working",
                             self.subset, self.tar_name + '_spearmanr.json')
         return luigi.LocalTarget(path)
+
+    def result2Dataframe(self):
+        with self.output().open('r') as ifs:
+            data = json.loads(ifs.read())
+
+        dfs = {}
+        for sdf_id, my_data in data.iteritems():
+            dfs[sdf_id] = pd.DataFrame(my_data).T
+        return dfs
 
     def run(self):
 
