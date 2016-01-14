@@ -4,8 +4,63 @@ import luigi
 import gzip
 import os
 import urllib
+import pybel
 
 from urls import WORKING_DIR, DAT_DIR, APOC_WORKING_DIR
+from scipy.spatial.distance import euclidean
+
+
+class ApocInput:
+    def __init__(self, lig_path, prt_path, threshold=7.0):
+        self.lig_path = lig_path
+        self.prt_path = prt_path
+        self.threshold = threshold
+
+    def __cleanedPdb(self):
+        with open(self.prt_path, 'r') as ifs:
+            cleaned = set()
+            for line in ifs:
+                if len(line) > 53 and line[:6] == "ATOM  ":
+                    atom_type = line[13:15]
+                    if atom_type == "CA" or atom_type == "CB":
+                        cleaned.add(line)
+            cleaned = list(cleaned)
+            cleaned = sorted(cleaned, key=lambda line: int(line[22:26]))
+            cleaned.append("TER")
+            return "".join(cleaned)
+
+    def __addContactResidues(self):
+        cleaned = self.__cleanedPdb()
+        prt = pybel.readstring("pdb", cleaned)
+        if type(self.lig_path) is str and os.path.exists(self.lig_path):
+            suffix = self.lig_path.split('.')[-1]
+            lig = pybel.readfile(suffix, self.lig_path).next()
+        elif type(self.lig_path) is pybel.Molecule:
+            lig = self.lig_path
+        else:
+            raise Exception("Wrong input for ligand")
+
+        pkt_lines = []
+        residues = set()
+        for line, atom in zip(cleaned.split("\n")[:-1], prt.atoms):
+            coords = atom.coords
+            dists = [euclidean(coords, a.coords) for a in lig.atoms]
+            if any([d < self.threshold for d in dists]):
+                pkt_lines.append(line)
+                res_num = int(line[22:26])
+                residues.add(res_num)
+
+        start_pkt_line = "\nPKT %d 100 %s\n" % (len(residues),
+                                                lig.title.split('/')[-1])
+
+        return cleaned + start_pkt_line + "\n".join(pkt_lines) + "\nTER\n"
+
+    def input4Apoc(self):
+        return self.__addContactResidues()
+
+
+
+
 
 
 class PdbPathTask(luigi.Task):
