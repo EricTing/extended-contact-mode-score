@@ -7,11 +7,14 @@ import shlex
 import subprocess32
 import tempfile
 import numpy as np
+from collections import defaultdict
 
 from astex_xcms import runPkcombu
 from apoc_inputs import ApocInput
 from run_control_apoc import ApocResultParer, PkcombuAtomMatchParser
 from dude_vina import readLigandCoords
+from single_complex_cms import contactVector
+from scipy.stats import spearmanr
 
 
 class FastSearch:
@@ -146,33 +149,56 @@ class BioLipReferencedSpearmanR:
         ref_pkt_path = tempfile.mkstemp()[1]
         query = BioLipQuery(self.lig_path,
                             index="/ddnB/work/jaydy/dat/BioLip/ligand_nr.fs")
+
+        results = defaultdict(dict)
         for ref_lig in query.search():
             ref_prt_pdb = query.correspondingPrtPdb(ref_lig)
             if os.path.exists(ref_prt_pdb):
-                apoc_input = ApocInput(ref_lig,
-                                       ref_prt_pdb,
-                                       threshold=7.0)
-                ref_apoc_input = apoc_input.input4Apoc()
-                ref_pkt = apoc_input.pocketSection()
-                with open(ref_pkt_path, 'w') as ofs:
-                    ofs.write(ref_apoc_input)
+                try:
+                    apoc_input = ApocInput(ref_lig,
+                                        ref_prt_pdb,
+                                        threshold=7.0)
+                    ref_apoc_input = apoc_input.input4Apoc()
+                    ref_pkt = apoc_input.pocketSection()
+                    with open(ref_pkt_path, 'w') as ofs:
+                        ofs.write(ref_apoc_input)
 
-                cmd = "apoc -plen 1 %s %s" % (self.pkt_path, ref_pkt_path)
-                print cmd
-                args = shlex.split(cmd)
-                apoc_result = subprocess32.check_output(args)
-                print apoc_result
-                apoc_parser = ApocResultParer(apoc_result)
-                if apoc_parser.numPocketSections() == 1:
-                    pocket_alignment = apoc_parser.queryPocket()
-                    self_res = pocket_alignment.template_res
-                    ref_res = pocket_alignment.query_res
+                    cmd = "apoc -plen 1 %s %s" % (self.pkt_path, ref_pkt_path)
+                    args = shlex.split(cmd)
+                    apoc_result = subprocess32.check_output(args)
+                    apoc_parser = ApocResultParer(apoc_result)
+                    if apoc_parser.numPocketSections() == 1:
+                        pocket_alignment = apoc_parser.queryPocket()
+                        self_res = pocket_alignment.template_res
+                        ref_res = pocket_alignment.query_res
 
-                    pc1, pc2 = self.__alignProtens(self.pkt, self_res,
-                                                   ref_pkt, ref_res)
-                    kcombu, lc1, lc2 = self.__alignLigands(self.lig, ref_lig)
-                    print lc1
-                    print lc2
+                        pc1, pc2 = self.__alignProtens(self.pkt, self_res,
+                                                    ref_pkt, ref_res)
+                        kcombu, lc1, lc2 = self.__alignLigands(self.lig, ref_lig)
+
+                        vec1 = contactVector(lc1, pc1)
+                        vec2 = contactVector(lc2, pc2)
+                        tc = kcombu.getTc()
+                        spearman = spearmanr(vec1, vec2)
+
+                        my_result = {
+                            "Tc": tc,
+                            "spearmanr": spearman.correlation,
+                            "pval": spearman.pvalue,
+                            "ps_score": pocket_alignment.ps_score,
+                            "tc_times_ps": tc * pocket_alignment.ps_score
+                        }
+
+                        results[ref_lig.title] = my_result
+                except Exception as detail:
+                    print detail
+
+        results = sorted(results.items(),
+                         key=lambda d: d[1].get('pval', 1))
+
+        for key, val in results:
+            print key
+            print val
 
         os.remove(self.pkt_path)
         os.remove(ref_pkt_path)
@@ -181,6 +207,10 @@ class BioLipReferencedSpearmanR:
 def test():
     cms = BioLipReferencedSpearmanR("/work/jaydy/dat/BioLip/sml_ligand_nr/03/103m_NBN_A_1.pdb",
                                     "/ddnB/work/jaydy/dat/BioLip/prt/03/103mA.pdb")
+    cms.calculate()
+
+    cms = BioLipReferencedSpearmanR("/work/jaydy/dat/BioLip/sml_ligand_nr/08/208l_CYS_A_1.pdb",
+                                    "/work/jaydy/dat/BioLip/prt/08/208lA.pdb")
     cms.calculate()
 
 
