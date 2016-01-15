@@ -29,7 +29,7 @@ class ApocInput:
             cleaned.append("TER")
             return "".join(cleaned)
 
-    def __addContactResidues(self):
+    def pocketSection(self):
         cleaned = self.__cleanedPdb()
         prt = pybel.readstring("pdb", cleaned)
         if type(self.lig_path) is str and os.path.exists(self.lig_path):
@@ -53,10 +53,11 @@ class ApocInput:
         start_pkt_line = "\nPKT %d 100 %s\n" % (len(residues),
                                                 lig.title.split('/')[-1])
 
-        return cleaned + start_pkt_line + "\n".join(pkt_lines) + "\nTER\n"
+        return start_pkt_line + "\n".join(pkt_lines) + "\nTER\n"
 
     def input4Apoc(self):
-        return self.__addContactResidues()
+        cleaned = self.__cleanedPdb()
+        return cleaned + self.pocketSection()
 
 
 

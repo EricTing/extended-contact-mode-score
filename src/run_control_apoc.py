@@ -59,6 +59,12 @@ class ApocResultParer:
         self._read_global()
         self._read_pocket()
 
+    def hasPocketAlignment(self):
+        return self.has_pocket_alignment
+
+    def numPocketSections(self):
+        return len(self.pocket_sections)
+
     def getContent(self):
         return self._content
 
@@ -106,9 +112,9 @@ class ApocResultParer:
                 if "Structure 2" in line and "Pocket:" in line:
                     data.qname = line.split()[-1].split(':')[-1]
                 if "PS-score" in line:
-                    data.ps_score = float(line.split(',')[0].split()[-1])
-                    data.p_value = float(line.split(',')[1].split()[-1])
-                    data.z_score = float(line.split(',')[2].split()[-1])
+                    data.ps_score = float(line.split(',')[0].split("=")[-1])
+                    data.p_value = float(line.split(',')[1].split("=")[-1])
+                    data.z_score = float(line.split(',')[2].split("=")[-1])
                 if "RMSD" in line and "Seq identity" in line:
                     data.rmsd = float(line.split(',')[0].split()[-1])
                     data.seq_identity = float(line.split(',')[-1].split()[-1])
@@ -121,12 +127,17 @@ class ApocResultParer:
         structure_2 = qname.split('_')[0] + qname.split('_')[2]
         return self.global_alignments[structure_1 + " " + structure_2]
 
-    def queryPocket(self, tname, qname):
-        try:
-            key = tname + " " + qname
-            return self.pocket_alignmets[key]
-        except:
-            raise KeyError, "Can not find pockets for %s and %s" % (tname, qname)
+    def queryPocket(self, tname="", qname=""):
+        if tname == "" and qname == "":
+            """by default return the first pocket alignment
+            """
+            return self.pocket_alignmets.values()[0]
+        else:
+            try:
+                key = tname + " " + qname
+                return self.pocket_alignmets[key]
+            except:
+                raise KeyError, "Can not find pockets for %s and %s" % (tname, qname)
 
     def writeProteinMatchingList(self, tname, qname, ofn):
         try:
