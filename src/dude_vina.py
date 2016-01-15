@@ -221,6 +221,18 @@ class Calculate(luigi.Task):
         shutil.rmtree(untared_dir)
 
 
+def readLigandCoords(path, mlist, format="sdf"):
+    mol = pybel.readfile(format, path).next()
+    mol.removeh()
+    all_coords = [atom.coords for atom in mol
+                  if not atom.OBAtom.IsHydrogen()]
+    coords = []
+    for idx in mlist:
+        coords.append(all_coords[idx - 1])
+
+    return coords
+
+
 class SpearmanR(Calculate):
     def output(self):
         try:
@@ -244,17 +256,6 @@ class SpearmanR(Calculate):
 
         untared_dir = self.untar()
         pdbqt_fns = self.getPdbqtFiles(untared_dir)
-
-        def readLigandCoords(path, mlist, format="sdf"):
-            mol = pybel.readfile(format, path).next()
-            mol.removeh()
-            all_coords = [atom.coords for atom in mol
-                          if not atom.OBAtom.IsHydrogen()]
-            coords = []
-            for idx in mlist:
-                coords.append(all_coords[idx - 1])
-
-            return coords
 
         def runSpearmanR():
             results = defaultdict(dict)

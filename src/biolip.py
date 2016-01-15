@@ -8,8 +8,10 @@ import subprocess32
 import tempfile
 import numpy as np
 
+from astex_xcms import runPkcombu
 from apoc_inputs import ApocInput
-from run_control_apoc import ApocResultParer
+from run_control_apoc import ApocResultParer, PkcombuAtomMatchParser
+from dude_vina import readLigandCoords
 
 
 class FastSearch:
@@ -64,9 +66,9 @@ class BioLipReferencedSpearmanR:
         suffix = lig_path.split('.')[-1]
         self.lig = pybel.readfile(suffix, self.lig_path).next()
 
-    def __calculate(self,
-                    pkt1, res1, lig1, atoms1,
-                    pkt2, res2, lig2, atoms2):
+    def __alignProtens(self,
+                       pkt1, res1,
+                       pkt2, res2):
         def prt_coords(pkt):
             res_coords = {}
             for line in pkt.splitlines():
@@ -110,7 +112,31 @@ class BioLipReferencedSpearmanR:
         pc1, pc2 = align(pc1, pc2, res1, res2)
         if len(pc1) != len(pc2):
             raise Exception("Unequal pocket residue number %d vs %d" % (len(pc1), len(pc2)))
+        else:
+            return pc1, pc2
 
+    def __alignLigands(self, lig1, lig2):
+        try:
+            sdf1 = tempfile.mkstemp()[-1]
+            sdf2 = tempfile.mkstemp()[-1]
+            oam_path = tempfile.mkstemp()[-1]
+
+            lig1.removeh()
+            lig2.removeh()
+
+            lig1.write("sdf", sdf1, overwrite=True)
+            lig2.write("sdf", sdf2, overwrite=True)
+
+            runPkcombu(sdf1, sdf2, oam_path)
+            kcombu = PkcombuAtomMatchParser(oam_path)
+            list1, list2 = kcombu.getMatchingSerialNums()
+            c1 = readLigandCoords(sdf1, list1)
+            c2 = readLigandCoords(sdf2, list2)
+            return kcombu, c1, c2
+        finally:
+            os.remove(oam_path)
+            os.remove(sdf1)
+            os.remove(sdf2)
 
     def calculate(self):
         self.pkt_path = tempfile.mkstemp()[1]
@@ -142,13 +168,11 @@ class BioLipReferencedSpearmanR:
                     self_res = pocket_alignment.template_res
                     ref_res = pocket_alignment.query_res
 
-                    self_atoms = []
-                    ref_atoms = []
-
-                    self.__calculate(self.pkt, self_res,
-                                     self.lig, self_atoms,
-                                     ref_pkt, ref_res,
-                                     ref_lig, ref_atoms)
+                    pc1, pc2 = self.__alignProtens(self.pkt, self_res,
+                                                   ref_pkt, ref_res)
+                    kcombu, lc1, lc2 = self.__alignLigands(self.lig, ref_lig)
+                    print lc1
+                    print lc2
 
         os.remove(self.pkt_path)
         os.remove(ref_pkt_path)
