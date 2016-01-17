@@ -16,6 +16,8 @@ from astex_xcms import runPkcombu
 from single_complex_cms import readPrtCoords, contactVector
 from scipy.stats import spearmanr
 
+from biolip import BioLipReferencedSpearmanR, readLigandCoords
+
 
 class CheckNames(luigi.Task):
     def output(self):
@@ -221,18 +223,6 @@ class Calculate(luigi.Task):
         shutil.rmtree(untared_dir)
 
 
-def readLigandCoords(path, mlist, format="sdf"):
-    mol = pybel.readfile(format, path).next()
-    mol.removeh()
-    all_coords = [atom.coords for atom in mol
-                  if not atom.OBAtom.IsHydrogen()]
-    coords = []
-    for idx in mlist:
-        coords.append(all_coords[idx - 1])
-
-    return coords
-
-
 class SpearmanR(Calculate):
     def output(self):
         try:
@@ -332,12 +322,60 @@ class SpearmanR(Calculate):
             ofs.write(to_write)
 
 
+class BioLipSpearmanR(SpearmanR):
+    def output(self):
+        try:
+            os.makedirs(os.path.join("/work/jaydy/working", self.subset))
+        except:
+            pass
+        path = os.path.join("/work/jaydy/working",
+                            self.subset, self.tar_name + '_biolip_spearmanr.json')
+        return luigi.LocalTarget(path)
+
+    def run(self):
+        untared_dir = self.untar()
+        pdbqt_fns = self.getPdbqtFiles(untared_dir)
+
+        def __run():
+            results = defaultdict(dict)
+            for fn in pdbqt_fns:
+                lig_sdf = os.path.splitext(fn)[0] + '.sdf'
+
+                if not os.path.exists(lig_sdf):
+                    cmds = ['obabel', '-ipdbqt', fn,
+                            '-osdf', '-O', lig_sdf]
+                    subprocess32.call(cmds)
+                    # only the first conformer is needed
+                    lig = pybel.readfile("sdf", lig_sdf).next()
+                    lig.removeh()
+                    lig.write(format="sdf",
+                              filename=lig_sdf, overwrite=True)
+
+                prt_id = os.path.split(fn)[-1].split('-')[0]
+                crystal_prt_pdb = PrtPdb(prt_id).getPdbPath()
+                cms = BioLipReferencedSpearmanR(lig_sdf, crystal_prt_pdb)
+                result = cms.calculate()
+                results[fn] = result
+
+            return results
+
+        results = __run()
+        to_write = json.dumps(results, sort_keys=True,
+                              indent=4, separators=(',', ': '))
+        ofn = self.output().path
+        print(ofn)
+        with open(ofn, 'w') as ofs:
+            ofs.write(to_write)
+
+
 def main(task_name):
     luigi.build([
         Calculate(task_name,
                   'output-crystal-active-mod-optimal'),
         SpearmanR(task_name,
                   'output-crystal-active-mod-optimal'),
+        BioLipSpearmanR(task_name,
+                        'output-crystal-active-mod-optimal'),
     ],
                 local_scheduler=True
     )

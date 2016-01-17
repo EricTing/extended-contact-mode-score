@@ -12,9 +12,20 @@ from collections import defaultdict
 from astex_xcms import runPkcombu
 from apoc_inputs import ApocInput
 from run_control_apoc import ApocResultParer, PkcombuAtomMatchParser
-from dude_vina import readLigandCoords
 from single_complex_cms import contactVector
 from scipy.stats import spearmanr
+
+
+def readLigandCoords(path, mlist, format="sdf"):
+    mol = pybel.readfile(format, path).next()
+    mol.removeh()
+    all_coords = [atom.coords for atom in mol
+                  if not atom.OBAtom.IsHydrogen()]
+    coords = []
+    for idx in mlist:
+        coords.append(all_coords[idx - 1])
+
+    return coords
 
 
 class FastSearch:
@@ -148,7 +159,8 @@ class BioLipReferencedSpearmanR:
 
         ref_pkt_path = tempfile.mkstemp()[1]
         query = BioLipQuery(self.lig_path,
-                            index="/ddnB/work/jaydy/dat/BioLip/ligand_nr.fs")
+                            index="/ddnB/work/jaydy/dat/BioLip/ligand_nr.fs",
+                            minimum_size=6)
 
         results = defaultdict(dict)
         for ref_lig in query.search():
@@ -156,8 +168,8 @@ class BioLipReferencedSpearmanR:
             if os.path.exists(ref_prt_pdb):
                 try:
                     apoc_input = ApocInput(ref_lig,
-                                        ref_prt_pdb,
-                                        threshold=7.0)
+                                           ref_prt_pdb,
+                                           threshold=7.0)
                     ref_apoc_input = apoc_input.input4Apoc()
                     ref_pkt = apoc_input.pocketSection()
                     with open(ref_pkt_path, 'w') as ofs:
@@ -173,8 +185,8 @@ class BioLipReferencedSpearmanR:
                         ref_res = pocket_alignment.query_res
 
                         pc1, pc2 = self.__alignProtens(self.pkt, self_res,
-                                                    ref_pkt, ref_res)
-                        kcombu, lc1, lc2 = self.__alignLigands(self.lig, ref_lig)
+                                                       ref_pkt, ref_res)
+                        kcombu, lc1, lc2 = self.alignLigands(self.lig, ref_lig)
 
                         vec1 = contactVector(lc1, pc1)
                         vec2 = contactVector(lc2, pc2)
@@ -196,12 +208,10 @@ class BioLipReferencedSpearmanR:
         results = sorted(results.items(),
                          key=lambda d: d[1].get('pval', 1))
 
-        for key, val in results:
-            print key
-            print val
-
         os.remove(self.pkt_path)
         os.remove(ref_pkt_path)
+
+        return results
 
 
 def test():
