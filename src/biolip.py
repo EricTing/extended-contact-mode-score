@@ -31,25 +31,31 @@ def readLigandCoords(path, mlist, format="sdf"):
 class FastSearch:
     def __init__(self, lig_path,
                  index="/ddnB/work/jaydy/dat/BioLip/ligand_nr.fs",
-                 tani=0.5, minimum_size=6):
+                 tani=0.5, minimum_size=6,
+                 maximum_search_results=100):
         self.lig_path = lig_path
         self.index = index
         self.tani = tani
         self.minimum_size = minimum_size
+        self.maximum_search_results = maximum_search_results
 
     def search(self, verbose=True):
         try:
             ofn = tempfile.mkstemp(suffix='.sdf')[1]
-            cmd = "babel %s %s -s %s -at%f" % (self.index,
-                                               ofn,
-                                               self.lig_path,
-                                               self.tani)
+            cmd = "babel %s %s -s %s -at%f" % (
+                self.index,
+                ofn,
+                self.lig_path,
+                self.tani)
             if verbose:
                 print cmd
             args = shlex.split(cmd)
             subprocess32.call(args)
             mols = [mol for mol in pybel.readfile(format="sdf", filename=ofn)
                     if len(mol.atoms) >= self.minimum_size]
+            # mols were implicitly ranked by their similarity to the query ligand
+            if len(mols) > self.maximum_search_results:
+                mols = mols[:self.maximum_search_results]
             return mols
         except Exception as detail:
             print "FAIL Fastsearch for %s" % (self.lig_path)
