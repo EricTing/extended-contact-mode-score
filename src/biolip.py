@@ -31,22 +31,24 @@ def readLigandCoords(path, mlist, format="sdf"):
 class FastSearch:
     def __init__(self, lig_path,
                  index="/ddnB/work/jaydy/dat/BioLip/ligand_nr.fs",
-                 tani=0.5, minimum_size=6,
+                 tani=0.5, minimum_size=6, max_tani=1.0,
                  maximum_search_results=100):
         self.lig_path = lig_path
         self.index = index
         self.tani = tani
+        self.max_tani = max_tani
         self.minimum_size = minimum_size
         self.maximum_search_results = maximum_search_results
 
     def search(self, verbose=True):
         try:
             ofn = tempfile.mkstemp(suffix='.sdf')[1]
-            cmd = "babel %s %s -s %s -at%f" % (
+            cmd = "babel %s %s -s %s -at%f,%f" % (
                 self.index,
                 ofn,
                 self.lig_path,
-                self.tani)
+                self.tani,
+                self.max_tani)
             if verbose:
                 print cmd
             args = shlex.split(cmd)
@@ -158,7 +160,8 @@ class BioLipReferencedSpearmanR:
             os.remove(sdf1)
             os.remove(sdf2)
 
-    def calculate(self):
+    def calculate(self, maximum_search_results=100,
+                  max_tani=1.0, minimum_size=6):
         self.pkt_path = tempfile.mkstemp()[1]
         with open(self.pkt_path, 'w') as ofs:
             ofs.write(self.apoc_input)
@@ -166,7 +169,9 @@ class BioLipReferencedSpearmanR:
         ref_pkt_path = tempfile.mkstemp()[1]
         query = BioLipQuery(self.lig_path,
                             index="/ddnB/work/jaydy/dat/BioLip/ligand_nr.fs",
-                            minimum_size=6)
+                            max_tani=max_tani,
+                            minimum_size=minimum_size,
+                            maximum_search_results=maximum_search_results)
 
         results = defaultdict(dict)
         for ref_lig in query.search():
