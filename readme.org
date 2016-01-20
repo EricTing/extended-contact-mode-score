@@ -142,6 +142,13 @@ The value of xCms should be <<<back-compatible>>> with Cms.
 
 * TODO Assess AutoVina on DUDE
 
+** TODO Presumption
+Similar ligand and pockets yield high spearmanr between the distance vectors
+
+*** TODO Prove
+1. [ ] Use BioLip's structure to query
+2. [ ] find the threshold of Tc and ps-score when the presumption breaks
+
 ** TODO Random prediction
 AutoVina has an option for random prediciton of ligand within the binding site.
 
