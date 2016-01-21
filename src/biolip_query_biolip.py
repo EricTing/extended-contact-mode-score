@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 
 import luigi
+import random
+import pybel
 import json
 import os
+import scipy.cluster.hierarchy as hr
+import numpy as np
 from biolip import BioLipReferencedSpearmanR
+from collections import defaultdict
 
+BIOLIP_LIGS_SDF = "/ddnB/work/jaydy/dat/BioLip/ligand_nr.sdf"
 OUTPUT_DIR = "/ddnB/work/jaydy/working/biolip/"
 
 
@@ -29,10 +35,88 @@ class Path(luigi.Task):
         return self.lig_pdb[1:3]
 
 
+class Cluster(luigi.Task):
+    def requires(self):
+        pass
+
+    def run(self):
+        mols = list(pybel.readfile('sdf', BIOLIP_LIGS_SDF))
+        # mols = list(pybel.readfile('sdf',
+        #                            "/ddnB/work/jaydy/dat/BioLip/sml_ligand_nr/a5.sdf"))
+
+        def calMat(mols):
+            fps = [mol.calcfp('maccs') for mol in mols]
+            tanimoto_vals = [[myfp | otherfp for otherfp in fps]
+                             for myfp in fps]
+            return np.asmatrix(tanimoto_vals)
+
+        def cluster(mols, cutoff=0.95):
+            tanimoto_vals = calMat(mols)
+            z = hr.linkage(tanimoto_vals, method='ward', metric='euclidean')
+            cluster_ids = hr.fcluster(z, cutoff, criterion='distance')
+            titles = [mol.title for mol in mols]
+            clusters = defaultdict(list)
+            for title, cluster_id in zip(titles, cluster_ids):
+                clusters[str(cluster_id)].append(title)
+            return clusters
+
+        random.shuffle(mols)
+        total_chunks = 10
+        chunk_size = len(mols) / total_chunks
+        chunks = [mols[i:i + chunk_size]
+                  for i in xrange(0, len(mols), chunk_size)]
+        results = []
+        for chunk in chunks:
+            results.append(cluster(chunk, cutoff=0.95))
+
+        to_write = json.dumps(results, sort_keys=True,
+                              indent=4, separators=(',', ': '))
+        ofn = self.output().path
+        print(ofn)
+        with open(ofn, 'w') as ofs:
+            ofs.write(to_write)
+
+    def output(self):
+        path = "../dat/biolip_cluster.json"
+        return luigi.LocalTarget(path)
+
+
+class SampleClusters(luigi.Task):
+    def requires(self):
+        return Cluster()
+
+    def output(self):
+        path = "../dat/biolipbiolip_sampled.txt"
+        return luigi.LocalTarget(path)
+
+    def run(self):
+        representatives = []
+        with self.requires().output().open('r') as ifs:
+            n_clusters = json.load(ifs)
+            for clusters in n_clusters:
+                for members in clusters.values():
+                    representatives.append(random.choice(members))
+
+        total = 2000
+        if len(representatives) > total:
+            representatives = random.sample(representatives, total)
+
+        names = map(lambda name: name.split('/')[-1],
+                    representatives)
+        with open(self.output().path, 'w') as ofs:
+            for name in names:
+                ofs.write(name + "\n")
+
+
 class BioLipBioLip(Path):
 
     def output(self):
-        path = os.path.join(OUTPUT_DIR, self.mid_two(), self.lig_pdb + ".json")
+        outdir = os.path.join(OUTPUT_DIR, self.mid_two())
+        try:
+            os.makedirs(outdir)
+        except:
+            pass
+        path = os.path.join(outdir, self.lig_pdb + ".json")
         return luigi.LocalTarget(path)
 
     def run(self):
@@ -57,11 +141,15 @@ class BioLipBioLip(Path):
 def main(name):
     luigi.build([
         BioLipBioLip(name)
-    ],
-                local_scheduler=True
+    ], local_scheduler=True
     )
 
 if __name__ == '__main__':
     import sys
     name = sys.argv[1]
     main(name)
+    # luigi.build([
+    #     Cluster(),
+    #     SampleClusters()
+    # ], local_scheduler=True
+    # )
