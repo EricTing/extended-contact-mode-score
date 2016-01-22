@@ -11,7 +11,7 @@ from biolip import BioLipReferencedSpearmanR
 from collections import defaultdict
 
 BIOLIP_LIGS_SDF = "/ddnB/work/jaydy/dat/BioLip/ligand_nr.sdf"
-OUTPUT_DIR = "/ddnB/work/jaydy/working/biolip/"
+OUTPUT_DIR = "/ddnB/work/jaydy/working/biolipbiolip/"
 
 
 class Path(luigi.Task):

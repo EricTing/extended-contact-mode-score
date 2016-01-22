@@ -192,6 +192,7 @@ class BioLipReferencedSpearmanR:
                     apoc_parser = ApocResultParer(apoc_result)
                     if apoc_parser.numPocketSections() == 1:
                         pocket_alignment = apoc_parser.queryPocket()
+                        global_alignment = apoc_parser.queryGlobal()
                         self_res = pocket_alignment.template_res
                         ref_res = pocket_alignment.query_res
 
@@ -209,7 +210,10 @@ class BioLipReferencedSpearmanR:
                             "spearmanr": spearman.correlation,
                             "pval": spearman.pvalue,
                             "ps_score": pocket_alignment.ps_score,
-                            "tc_times_ps": tc * pocket_alignment.ps_score
+                            "tc_times_ps": tc * pocket_alignment.ps_score,
+                            "TM-score": global_alignment.tm_score,
+                            "rmsd": global_alignment.rmsd,
+                            "seq_identity": global_alignment.seq_identity
                         }
 
                         results[ref_lig.title] = my_result
