@@ -82,12 +82,14 @@ class Cluster(luigi.Task):
 
 
 class SampleClusters(luigi.Task):
+    path = luigi.Parameter(default="../dat/biolipbiolip_sampled.txt")
+    total = luigi.Parameter(default=2000)
+
     def requires(self):
         return Cluster()
 
     def output(self):
-        path = "../dat/biolipbiolip_sampled.txt"
-        return luigi.LocalTarget(path)
+        return luigi.LocalTarget(self.path)
 
     def run(self):
         representatives = []
@@ -97,9 +99,8 @@ class SampleClusters(luigi.Task):
                 for members in clusters.values():
                     representatives.append(random.choice(members))
 
-        total = 2000
-        if len(representatives) > total:
-            representatives = random.sample(representatives, total)
+        if len(representatives) > self.total:
+            representatives = random.sample(representatives, self.total)
 
         names = map(lambda name: name.split('/')[-1],
                     representatives)
