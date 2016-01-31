@@ -33,14 +33,6 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
         if not os.path.exists(self.lig_sdf):
             lig.write('sdf', self.lig_sdf, overwrite=True)
 
-        # protein pdbqt
-        # TODO: babel has problem converting pdb to pdbqt
-        # TODO: fix /home/jaydy/Workspace/Bitbucket/ConfSpace/src/prepare_receptor4.pl
-        self.prt_pdbqt = self.prtPdb() + '.pdbqt'
-        if not os.path.exists(self.prt_pdbqt):
-            cmd = "babel -ipdb %s -opdbqt %s" % (self.prtPdb(), self.prt_pdbqt)
-            subprocess32.call(shlex.split(cmd))
-
     def output(self):
         self.__prepareInputFiles()
         path = self.lig_pdbqt + '.vina.pdbqt'
@@ -54,9 +46,7 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
                 bin_path.ehalf_box_size_bin(),
                 self.lig_sdf]
         stdout = subprocess32.check_output(cmds)
-        print stdout
         box_size, x, y, z = stdout.split()
-        print box_size, x, y, z
 
         cmd = '''%s --receptor %s --ligand %s \
         --center_x %s\
@@ -68,16 +58,19 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
         --cpu 1\
         --out %s
         ''' % (bin_path.vina_bin(),
-               self.prt_pdbqt,
+               self.prtPdbqt,
                self.lig_pdbqt,
                x, y, z,
                box_size,
                box_size,
                box_size,
                self.output().path
-        )
+               )
         print cmd
-        subprocess32.call(shlex.split(cmd))
+        vina_out = subprocess32.check_output(shlex.split(cmd))
+        ofn = self.output().path + ".txt"
+        with open(ofn, 'w') as ofs:
+            ofs.write(vina_out)
 
 
 def main():

@@ -19,6 +19,24 @@ class Path(luigi.Task):
     prt_dir = luigi.Parameter(default="/work/jaydy/dat/BioLip/prt/")
     lig_dir = luigi.Parameter(default="/ddnB/work/jaydy/dat/BioLip/ligand_nr/")
 
+    @property
+    def pdbqt_dir(self):
+        return os.path.join(
+            "/ddnB/work/jaydy/dat/BioLip/prt_pdbqt/",
+            self.mid_two,
+        )
+
+    @property
+    def prtPdbqt(self):
+        pdbqt = self.lig_pdb.split(
+            '_')[0] + self.lig_pdb.split('_')[2] + ".pdbqt"
+        path = os.path.join(
+            "/ddnB/work/jaydy/dat/BioLip/prt_pdbqt/",
+            self.mid_two,
+            pdbqt
+        )
+        return path
+
     def prtPdb(self):
         code = os.path.basename(self.lig_pdb)
         mid_two = code[1:3]
@@ -31,6 +49,7 @@ class Path(luigi.Task):
         path = os.path.join(self.lig_dir, mid_two, self.lig_pdb)
         return path
 
+    @property
     def mid_two(self):
         return self.lig_pdb[1:3]
 
