@@ -131,7 +131,7 @@ class SampleClusters(luigi.Task):
 class BioLipBioLip(Path):
 
     def output(self):
-        outdir = os.path.join(OUTPUT_DIR, self.mid_two())
+        outdir = os.path.join(OUTPUT_DIR, self.mid_two)
         try:
             os.makedirs(outdir)
         except:
