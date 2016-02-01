@@ -27,10 +27,9 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
         # ligand pdbqt
         self.lig_pdbqt = os.path.join(self.workdir(), self.lig_pdb + '.pdbqt')
         self.lig_sdf = os.path.join(self.workdir(), self.lig_pdb + '.sdf')
-        lig = pybel.readfile('pdb', self.ligPdb()).next()
-        if not os.path.exists(self.lig_pdbqt):
+        if (not os.path.exists(self.lig_pdbqt)) or (not os.path.exists(self.lig_sdf)):
+            lig = pybel.readfile('pdb', self.ligPdb()).next()
             lig.write('pdbqt', self.lig_pdbqt, overwrite=True)
-        if not os.path.exists(self.lig_sdf):
             lig.write('sdf', self.lig_sdf, overwrite=True)
 
     def output(self):
@@ -73,13 +72,13 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
             ofs.write(vina_out)
 
 
-def main():
+def main(name):
     luigi.build([
-        VinaPredictBiolipStructure('3e3t_I3C_A_3.pdb'),
-        VinaPredictBiolipStructure('1i9m_INW_A_2.pdb'),
+        VinaPredictBiolipStructure(name),
     ], local_scheduler=True
     )
     pass
 
 if __name__ == '__main__':
-    main()
+    import sys
+    main(sys.argv[1])
