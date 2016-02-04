@@ -37,6 +37,7 @@ class Path(luigi.Task):
         )
         return path
 
+    @property
     def prtPdb(self):
         code = os.path.basename(self.lig_pdb)
         mid_two = code[1:3]
@@ -140,7 +141,7 @@ class BioLipBioLip(Path):
         return luigi.LocalTarget(path)
 
     def run(self):
-        prt_pdb = self.prtPdb()
+        prt_pdb = self.prtPdb
         lig_pdb = self.ligPdb()
         biolip_spearmanr = BioLipReferencedSpearmanR(lig_pdb, prt_pdb)
         inf = float('inf')

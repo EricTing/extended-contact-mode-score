@@ -86,6 +86,7 @@ class BioLipReferencedSpearmanR:
         self.apoc_input = apoc_input.input4Apoc()
         self.pkt = apoc_input.pocketSection()
         suffix = lig_path.split('.')[-1]
+        # only read the first molecule
         self.lig = pybel.readfile(suffix, self.lig_path).next()
 
     def __alignProtens(self,
