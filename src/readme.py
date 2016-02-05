@@ -176,8 +176,8 @@ class CheckVinaResultAccuracy(luigi.Task):
                 data.append(result['rmsd'])
                 index.append(name)
 
-        df = pd.Series(data, index)
-        df.to_csv(self.output().path)
+        df = pd.DataFrame({'query': index, 'rmsd': data})
+        df.to_csv(self.output().path, ignore_index=True)
 
 
 if __name__ == "__main__":
