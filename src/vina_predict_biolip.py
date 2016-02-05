@@ -10,7 +10,8 @@ import shlex
 import json
 import dockedpose
 
-from biolip_query_biolip import BioLipReferencedSpearmanR
+from biolip import BioLipReferencedSpearmanR
+from biolip import FixedPocketBioLipReferencedSpearmanR
 
 OUTPUT_DIR = "/ddnB/work/jaydy/working/vina_biolip/"
 
@@ -99,6 +100,34 @@ class QueryVinaResultOnBioLip(VinaPredictBiolipStructure):
         return luigi.LocalTarget(path)
 
 
+class QueryVinaResultOnBioLipFixedPocket(QueryVinaResultOnBioLip):
+    def output(self):
+        path = self.requires().output().path + '.fixed.json'
+        return luigi.LocalTarget(path)
+
+    def __runFixed(self, vina_task):
+        prt_pdb = vina_task.prtPdb
+        native_lig_path = vina_task.lig_sdf
+        lig_pdbqt = vina_task.output().path
+        biolip_spearmanr = FixedPocketBioLipReferencedSpearmanR(
+            lig_pdbqt, prt_pdb, native_lig_path)
+        inf = float('inf')
+        # maximum_search_results = 100
+        result = biolip_spearmanr.calculate(maximum_search_results=inf,
+                                            max_tani=0.9)
+        to_write = json.dumps(result,
+                              sort_keys=True,
+                              indent=4,
+                              separators=(',', ': '))
+        return to_write
+
+    def run(self):
+        vina_task = self.requires()
+        to_write = self.__runFixed(vina_task)
+        with open(self.output().path, 'w') as ofs:
+            ofs.write(to_write)
+
+
 class VinaResultAccuracy(VinaPredictBiolipStructure):
     def requires(self):
         return VinaPredictBiolipStructure(self.lig_pdb)
@@ -159,6 +188,7 @@ def main(name):
             # VinaPredictBiolipStructure(name),
             VinaResultAccuracy(name),
             QueryVinaResultOnBioLip(name),
+            QueryVinaResultOnBioLipFixedPocket(name),
         ],
         local_scheduler=True)
     pass

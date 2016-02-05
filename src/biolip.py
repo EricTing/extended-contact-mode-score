@@ -197,19 +197,20 @@ class BioLipReferencedSpearmanR:
                         self_res = pocket_alignment.template_res
                         ref_res = pocket_alignment.query_res
 
-                        pc1, pc2 = self.__alignProtens(self.pkt, self_res,
-                                                       ref_pkt, ref_res)
-                        kcombu, lc1, lc2 = self.__alignLigands(self.lig, ref_lig)
+                        pc1, pc2 = self.__alignProtens(
+                            self.pkt, self_res, ref_pkt, ref_res)
+                        kcombu, lc1, lc2 = self.__alignLigands(
+                            self.lig, ref_lig)
 
                         vec1 = contactVector(lc1, pc1)
                         vec2 = contactVector(lc2, pc2)
                         tc = kcombu.getTc()
-                        spearman = spearmanr(vec1, vec2)
+                        rho, pval = spearmanr(vec1, vec2)
 
                         my_result = {
                             "Tc": tc,
-                            "spearmanr": spearman.correlation,
-                            "pval": spearman.pvalue,
+                            "spearmanr": rho,
+                            "pval": pval,
                             "ps_score": pocket_alignment.ps_score,
                             "tc_times_ps": tc * pocket_alignment.ps_score,
                             "TM-score": global_alignment.tm_score,
@@ -230,14 +231,34 @@ class BioLipReferencedSpearmanR:
         return results
 
 
+class FixedPocketBioLipReferencedSpearmanR(BioLipReferencedSpearmanR):
+    def __init__(self, lig_path, prt_path, native_lig_path):
+        self.lig_path = lig_path
+        self.prt_path = prt_path
+        apoc_input = ApocInput(native_lig_path, self.prt_path,
+                               threshold=7.0)
+        self.apoc_input = apoc_input.input4Apoc()
+        self.pkt = apoc_input.pocketSection()
+        suffix = lig_path.split('.')[-1]
+        self.lig = pybel.readfile(suffix, self.lig_path).next()
+        print("This FixedPocketBioLipReferencedSpearmanR")
+
+
 def test():
-    cms = BioLipReferencedSpearmanR("/work/jaydy/dat/BioLip/sml_ligand_nr/03/103m_NBN_A_1.pdb",
-                                    "/ddnB/work/jaydy/dat/BioLip/prt/03/103mA.pdb")
+    cms = BioLipReferencedSpearmanR(
+        "/work/jaydy/dat/BioLip/sml_ligand_nr/03/103m_NBN_A_1.pdb",
+        "/ddnB/work/jaydy/dat/BioLip/prt/03/103mA.pdb")
     cms.calculate()
 
-    cms = BioLipReferencedSpearmanR("/work/jaydy/dat/BioLip/sml_ligand_nr/08/208l_CYS_A_1.pdb",
-                                    "/work/jaydy/dat/BioLip/prt/08/208lA.pdb")
+    cms = BioLipReferencedSpearmanR(
+        "/work/jaydy/dat/BioLip/sml_ligand_nr/08/208l_CYS_A_1.pdb",
+        "/work/jaydy/dat/BioLip/prt/08/208lA.pdb")
     cms.calculate()
+
+    cms = FixedPocketBioLipReferencedSpearmanR(
+        "/ddnB/work/jaydy/working/vina_biolip/187l_PXY_A_1.pdb/187l_PXY_A_1.pdb.pdbqt.vina.pdbqt",
+        "/ddnB/work/jaydy/dat/BioLip/prt/87/187lA.pdb",
+        "/ddnB/work/jaydy/dat/BioLip/sml_ligand_nr/87/187l_PXY_A_1.pdb")
 
 
 if __name__ == '__main__':
