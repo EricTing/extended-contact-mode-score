@@ -10,6 +10,8 @@ import luigi
 import biolip_query_biolip
 import vina_predict_biolip
 
+from vina_predict_biolip import QueryVinaResultOnBioLipFixedPocket
+
 sampled_list = "../dat/biolipbiolip_sampled_2.txt"
 sampled_names = [_.rstrip() for _ in file(sampled_list)]
 
@@ -133,6 +135,34 @@ class CuttedVinaPredictBioLip(luigi.Task):
         cutted.to_csv(self.output().path, ignore_index=True)
 
 
+class VinaPredictBioLipFixed(luigi.Task):
+    def check(self):
+        completes, incompletes = [], []
+        for name in sampled_names:
+            task = QueryVinaResultOnBioLipFixedPocket(name)
+            if task.complete():
+                completes.append(name)
+            else:
+                incompletes.append(name)
+        print("{} completes and {} incompletes".format(
+            len(completes), len(incompletes)))
+        return completes
+
+    def output(self):
+        path = "/work/jaydy/working/vina_biolip_sampled_fixed.csv"
+        return luigi.LocalTarget(path)
+
+    def run(self):
+        sampled_df = pd.DataFrame()
+        for name in self.check():
+            task = QueryVinaResultOnBioLipFixedPocket(name)
+            with task.output().open('r') as ifs:
+                result = json.loads(ifs.read())
+                df = read2Df(result, name)
+                sampled_df = sampled_df.append(df, ignore_index=True)
+        sampled_df.to_csv(self.output().path, ignore_index=True)
+
+
 class UnCuttedVinaPredictBioLip(CuttedVinaPredictBioLip):
     def output(self):
         path = "/work/jaydy/working/uncutted_vina_biolip_sampled.csv"
@@ -188,5 +218,6 @@ if __name__ == "__main__":
             CuttedVinaPredictBioLip(),
             UnCuttedVinaPredictBioLip(),
             CheckVinaResultAccuracy(),
+            VinaPredictBioLipFixed(),
         ],
         local_scheduler=True)
