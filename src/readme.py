@@ -163,6 +163,22 @@ class VinaPredictBioLipFixed(luigi.Task):
         sampled_df.to_csv(self.output().path, ignore_index=True)
 
 
+class CuttedVinaPredictBioLipFixed(luigi.Task):
+    def requires(self):
+        return VinaPredictBioLipFixed()
+
+    def output(self):
+        path = os.path.splitext(self.requires().output().path)[
+            0] + '.cutted.csv'
+        return luigi.LocalTarget(path)
+
+    def run(self):
+        df = pd.read_csv(self.requires().output().path, index_col=0)
+        cutted = cutRedundantTemplates(df)
+        cutted.set_index('query', inplace=True)
+        cutted.to_csv(self.output().path, ignore_index=True)
+
+
 class UnCuttedVinaPredictBioLip(CuttedVinaPredictBioLip):
     def output(self):
         path = "/work/jaydy/working/uncutted_vina_biolip_sampled.csv"
@@ -219,5 +235,6 @@ if __name__ == "__main__":
             UnCuttedVinaPredictBioLip(),
             CheckVinaResultAccuracy(),
             VinaPredictBioLipFixed(),
+            CuttedVinaPredictBioLipFixed(),
         ],
         local_scheduler=True)
