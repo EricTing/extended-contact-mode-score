@@ -174,7 +174,8 @@ class CuttedVinaPredictBioLipFixed(luigi.Task):
 
     def run(self):
         df = pd.read_csv(self.requires().output().path, index_col=0)
-        cutted = cutRedundantTemplates(df)
+        cutted = df.groupby('query', as_index=False)\
+                   .apply(cutRedundantTemplates)
         cutted.set_index('query', inplace=True)
         cutted.to_csv(self.output().path, ignore_index=True)
 
