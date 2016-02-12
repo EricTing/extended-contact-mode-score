@@ -89,9 +89,9 @@ class BioLipReferencedSpearmanR:
         # only read the first molecule
         self.lig = pybel.readfile(suffix, self.lig_path).next()
 
-    def __alignProtens(self,
-                       pkt1, res1,
-                       pkt2, res2):
+    def alignProteins(self,
+                      pkt1, res1,
+                      pkt2, res2):
         def prt_coords(pkt):
             res_coords = {}
             for line in pkt.splitlines():
@@ -116,7 +116,8 @@ class BioLipReferencedSpearmanR:
                             z = float(line[46:54])
                             res_coords[residue_id] = np.array((x, y, z), "f")
                         except Exception:
-                            raise Exception("Invalid or missing coordinates:\n %s" % line)
+                            raise Exception(
+                                "Invalid or missing coordinates:\n %s" % line)
             return res_coords
 
         def align(pc1, pc2, res1, res2):
@@ -134,11 +135,12 @@ class BioLipReferencedSpearmanR:
         pc2 = prt_coords(pkt2)
         pc1, pc2 = align(pc1, pc2, res1, res2)
         if len(pc1) != len(pc2):
-            raise Exception("Unequal pocket residue number %d vs %d" % (len(pc1), len(pc2)))
+            raise Exception("Unequal pocket residue number %d vs %d" %
+                            (len(pc1), len(pc2)))
         else:
             return pc1, pc2
 
-    def __alignLigands(self, lig1, lig2):
+    def alignLigands(self, lig1, lig2):
         try:
             sdf1 = tempfile.mkstemp()[-1]
             sdf2 = tempfile.mkstemp()[-1]
@@ -197,9 +199,9 @@ class BioLipReferencedSpearmanR:
                         self_res = pocket_alignment.template_res
                         ref_res = pocket_alignment.query_res
 
-                        pc1, pc2 = self.__alignProtens(
+                        pc1, pc2 = self.alignProteins(
                             self.pkt, self_res, ref_pkt, ref_res)
-                        kcombu, lc1, lc2 = self.__alignLigands(
+                        kcombu, lc1, lc2 = self.alignLigands(
                             self.lig, ref_lig)
 
                         vec1 = contactVector(lc1, pc1)
@@ -210,6 +212,9 @@ class BioLipReferencedSpearmanR:
                         my_result = {
                             "Tc": tc,
                             "spearmanr": rho,
+                            "ps_score_pval": pocket_alignment.p_value,
+                            "num_binding_res": len(ref_res),
+                            "num_lig_atoms": len(lc1),
                             "pval": pval,
                             "ps_score": pocket_alignment.ps_score,
                             "tc_times_ps": tc * pocket_alignment.ps_score,

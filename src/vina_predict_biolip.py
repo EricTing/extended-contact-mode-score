@@ -96,13 +96,13 @@ class QueryVinaResultOnBioLip(VinaPredictBiolipStructure):
             ofs.write(to_write)
 
     def output(self):
-        path = self.requires().output().path + '.json'
+        path = self.requires().output().path + '.1000.json'
         return luigi.LocalTarget(path)
 
 
 class QueryVinaResultOnBioLipFixedPocket(QueryVinaResultOnBioLip):
     def output(self):
-        path = self.requires().output().path + '.fixed.json'
+        path = self.requires().output().path + '.fixed.1000.json'
         return luigi.LocalTarget(path)
 
     def __runFixed(self, vina_task):

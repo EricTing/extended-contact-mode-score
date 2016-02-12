@@ -50,8 +50,8 @@ class ApocInput:
                 res_num = int(line[22:26])
                 residues.add(res_num)
 
-        start_pkt_line = "\nPKT %d 100 %s\n" % (len(residues),
-                                                lig.title.split('/')[-1])
+        start_pkt_line = "\nPKT %d 1000 %s\n" % (len(residues),
+                                                 lig.title.split('/')[-1])
 
         return start_pkt_line + "\n".join(pkt_lines) + "\nTER\n"
 

@@ -137,7 +137,7 @@ class BioLipBioLip(Path):
             os.makedirs(outdir)
         except:
             pass
-        path = os.path.join(outdir, self.lig_pdb + ".json")
+        path = os.path.join(outdir, self.lig_pdb + ".1000.json")
         return luigi.LocalTarget(path)
 
     def run(self):
