@@ -142,22 +142,33 @@ The value of xCms should be <<<back-compatible>>> with Cms.
 
 * TODO Assess AutoVina on DUDE
 
-** TODO Presumption
+** DONE Presumption
+CLOSED: [2016-02-12 Fri 14:39]
 Similar ligand and pockets yield high spearmanr between the distance vectors
 
-*** TODO Prove
-1. [ ] Use BioLip's structure to query
-2. [ ] find the threshold of Tc and ps-score when the presumption breaks
+*** DONE Prove
+CLOSED: [2016-02-12 Fri 14:38]
+1. [X] Use BioLip's structure to query
+2. [X] Cluster the ligands in BioLip
+3. [X] do the clustering of the proteins using CD-HIT?
+   http://weizhongli-lab.org/cd-hit/
+   #+BEGIN_SRC python
+     # generate fasta sequence from pdb file
+     import pybel
+     prt = pybel.readfile('pdb', "/ddnB/work/jaydy/dat/BioLip/prt/01/101mA.pdb").next()
+     fasta_str = prt.write('fasta')
+   #+END_SRC
+     No, because we will rank the templates
+4. [X] find how spearmanr evolves with ps_score and TC
 
-** TODO Random prediction
-AutoVina has an option for random prediciton of ligand within the binding site.
-
-** TODO Use mutiple template pockets and ligands
+** DONE Use mutiple template pockets and ligands
+CLOSED: [2016-02-12 Fri 14:39]
 1. Non-redundant dataset of proteins and ligands
    http://zhanglab.ccmb.med.umich.edu/BioLiP/download.html
    1. filter the ligands with
       1. size constraints (6 < size)
-      2. tanimoto coefficients > 0.5 (using FastSearch in OpenBabel http://openbabel.org/wiki/FastSearch)
+      2. [ ] tanimoto coefficients > 0.5 (using FastSearch in OpenBabel http://openbabel.org/wiki/FastSearch)
+         Note that pkcombu and babel gives different tanimoto coefficients for the same ligand pair
    2. [X] Index the ligands
       1. [X] use only small ligands with #atom < 999
       2. [X] /home/jaydy/Workspace/Bitbucket/xcms/src/ligand_nr.bash
