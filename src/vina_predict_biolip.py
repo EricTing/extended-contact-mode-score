@@ -33,7 +33,7 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
     def lig_sdf(self):
         return os.path.join(self.workdir(), self.lig_pdb + '.sdf')
 
-    def __prepareInputFiles(self):
+    def prepareInputFiles(self):
         if (not os.path.exists(self.lig_pdbqt)) or (
                 not os.path.exists(self.lig_sdf)):
             lig = pybel.readfile('pdb', self.ligPdb()).next()
@@ -41,12 +41,12 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
             lig.write('sdf', self.lig_sdf, overwrite=True)
 
     def output(self):
-        self.__prepareInputFiles()
+        self.prepareInputFiles()
         path = self.lig_pdbqt + '.vina.pdbqt'
         return luigi.LocalTarget(path)
 
     def run(self):
-        self.__prepareInputFiles()
+        self.prepareInputFiles()
 
         bin_path = sample_confs.Path('')
         cmds = ['perl', bin_path.ehalf_box_size_bin(), self.lig_sdf]
@@ -69,6 +69,42 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
         ofn = self.output().path + ".txt"
         with open(ofn, 'w') as ofs:
             ofs.write(vina_out)
+
+
+class VinaRandomizeBiolipStructure(VinaPredictBiolipStructure):
+    def requires(self):
+        return VinaPredictBiolipStructure(self.lig_pdb)
+
+    def output(self):
+        path = self.lig_pdbqt + ".rnd.pdbqt"
+        return luigi.LocalTarget(path)
+
+    def run(self):
+        self.prepareInputFiles()
+
+        bin_path = sample_confs.Path('')
+        cmds = ['perl', bin_path.ehalf_box_size_bin(), self.lig_sdf]
+        stdout = subprocess32.check_output(cmds)
+        box_size, x, y, z = stdout.split()
+
+        cmd = '''%s --receptor %s --ligand %s \
+        --center_x %s\
+        --center_y %s\
+        --center_z %s\
+        --size_x %s\
+        --size_y %s\
+        --size_z %s\
+        --randomize_only\
+        --cpu 1\
+        --out %s
+        ''' % (bin_path.vina_bin(), self.prtPdbqt, self.lig_pdbqt, x, y, z,
+               box_size, box_size, box_size, self.output().path)
+        print cmd
+        vina_out = subprocess32.check_output(shlex.split(cmd))
+        ofn = self.output().path + ".rnd.txt"
+        with open(ofn, 'w') as ofs:
+            ofs.write(vina_out)
+
 
 
 class QueryVinaResultOnBioLip(VinaPredictBiolipStructure):
@@ -105,7 +141,7 @@ class QueryVinaResultOnBioLipFixedPocket(QueryVinaResultOnBioLip):
         path = self.requires().output().path + '.fixed.1000.json'
         return luigi.LocalTarget(path)
 
-    def __runFixed(self, vina_task):
+    def runFixed(self, vina_task):
         prt_pdb = vina_task.prtPdb
         native_lig_path = vina_task.lig_sdf
         lig_pdbqt = vina_task.output().path
@@ -123,9 +159,14 @@ class QueryVinaResultOnBioLipFixedPocket(QueryVinaResultOnBioLip):
 
     def run(self):
         vina_task = self.requires()
-        to_write = self.__runFixed(vina_task)
+        to_write = self.runFixed(vina_task)
         with open(self.output().path, 'w') as ofs:
             ofs.write(to_write)
+
+
+class QueryVinaRandomResultOnBioLipFixedPocket(QueryVinaResultOnBioLipFixedPocket):
+    def requires(self):
+        return VinaRandomizeBiolipStructure(self.lig_pdb)
 
 
 class VinaResultAccuracy(VinaPredictBiolipStructure):
@@ -186,9 +227,11 @@ def main(name):
     luigi.build(
         [
             # VinaPredictBiolipStructure(name),
-            VinaResultAccuracy(name),
-            QueryVinaResultOnBioLip(name),
-            QueryVinaResultOnBioLipFixedPocket(name),
+            # VinaResultAccuracy(name),
+            # QueryVinaResultOnBioLip(name),
+            # QueryVinaResultOnBioLipFixedPocket(name),
+            # VinaRandomizeBiolipStructure(name),
+            QueryVinaRandomResultOnBioLipFixedPocket(name),
         ],
         local_scheduler=True)
     pass
