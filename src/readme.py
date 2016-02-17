@@ -15,6 +15,7 @@ import biolip_query_biolip
 import vina_predict_biolip
 
 from vina_predict_biolip import QueryVinaResultOnBioLipFixedPocket
+from vina_predict_biolip import QueryVinaRandomResultOnBioLipFixedPocket
 
 sampled_list = "../dat/biolipbiolip_sampled_2.txt"
 sampled_names = [_.rstrip() for _ in file(sampled_list)]
@@ -132,6 +133,24 @@ class VinaPredictBioLipFixed(luigi.Task):
                 df = read2Df(result, name)
                 sampled_df = sampled_df.append(df, ignore_index=True)
         sampled_df.to_csv(self.output().path, ignore_index=True)
+
+
+class VinaRandomizedBioLipFixed(VinaPredictBioLipFixed):
+    def check(self):
+        completes, incompletes = [], []
+        for name in sampled_names:
+            task = QueryVinaRandomResultOnBioLipFixedPocket(name)
+            if task.complete():
+                completes.append(name)
+            else:
+                incompletes.append(name)
+        print("{} completes and {} incompletes".format(
+            len(completes), len(incompletes)))
+        return completes
+
+    def output(self):
+        path = "/work/jaydy/working/vina_biolip_sampled_rnd.csv"
+        return luigi.LocalTarget(path)
 
 
 class CuttedVinaPredictBioLipFixed(luigi.Task):
@@ -378,6 +397,7 @@ if __name__ == "__main__":
             UnCuttedVinaPredictBioLip(),
             CheckVinaResultAccuracy(),
             VinaPredictBioLipFixed(),
+            VinaRandomizedBioLipFixed(),
             # CuttedVinaPredictBioLipFixed(),
         ],
         local_scheduler=True)
