@@ -233,7 +233,7 @@ def clean(df):
     print("{} queries and {} records in the original dataset".format(df[
         'query'].unique().size, df.shape[0]))
     # regular ps_score
-    df = df[(df.ps_score < 1.001) & (df.ps_score) > 0.00]
+    df = df[(df.ps_score < 1.001) & (df.ps_score > 0.00)]
     print("{} queries and {} records after removing wield ps-score".format(df[
         'query'].unique().size, df.shape[0]))
     # different systems
