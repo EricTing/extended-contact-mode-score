@@ -106,7 +106,6 @@ class VinaRandomizeBiolipStructure(VinaPredictBiolipStructure):
             ofs.write(vina_out)
 
 
-
 class QueryVinaResultOnBioLip(VinaPredictBiolipStructure):
     def requires(self):
         return VinaPredictBiolipStructure(self.lig_pdb)
@@ -164,7 +163,8 @@ class QueryVinaResultOnBioLipFixedPocket(QueryVinaResultOnBioLip):
             ofs.write(to_write)
 
 
-class QueryVinaRandomResultOnBioLipFixedPocket(QueryVinaResultOnBioLipFixedPocket):
+class QueryVinaRandomResultOnBioLipFixedPocket(
+        QueryVinaResultOnBioLipFixedPocket):
     def requires(self):
         return VinaRandomizeBiolipStructure(self.lig_pdb)
 
@@ -177,21 +177,21 @@ class VinaResultAccuracy(VinaPredictBiolipStructure):
         path = self.requires().output().path + '.actual.json'
         return luigi.LocalTarget(path)
 
-    def __calculateRmsd(self):
-        vina_task = VinaPredictBiolipStructure(self.lig_pdb)
+    def caculateRMSD(self):
+        vina_task = self.requires()
         predicted_pdbqt = vina_task.output().path
         predicted_mol = pybel.readfile('pdbqt', predicted_pdbqt).next()
         crystal_pdbqt = vina_task.lig_pdbqt
         crystal_mol = pybel.readfile('pdbqt', crystal_pdbqt).next()
 
-        def __rmsd(m1, m2):
+        def rmsd(m1, m2):
             c1 = [a.coords for a in m1 if not a.OBAtom.IsHydrogen()]
             c2 = [a.coords for a in m2 if not a.OBAtom.IsHydrogen()]
             return dockedpose.rmsd(c1, c2)
 
-        return __rmsd(predicted_mol, crystal_mol)
+        return rmsd(predicted_mol, crystal_mol)
 
-    def __cms(self):
+    def CMS(self):
         vina_task = VinaPredictBiolipStructure(self.lig_pdb)
         predicted_pdbqt = vina_task.output().path
         crystal_sdf = vina_task.lig_sdf
@@ -208,7 +208,7 @@ class VinaResultAccuracy(VinaPredictBiolipStructure):
         subprocess32.call(cmds)
 
     def run(self):
-        rmsd = self.__calculateRmsd()
+        rmsd = self.caculateRMSD()
         result = {'rmsd': rmsd}
         to_write = json.dumps(result,
                               sort_keys=True,
@@ -216,6 +216,15 @@ class VinaResultAccuracy(VinaPredictBiolipStructure):
                               separators=(',', ': '))
         with self.output().open('w') as ofs:
             ofs.write(to_write)
+
+
+class VinaRandomAccuracy(VinaResultAccuracy):
+    def requires(self):
+        return VinaRandomizeBiolipStructure(self.lig_pdb)
+
+    def output(self):
+        path = self.requires().output().path + '.actual.json'
+        return luigi.LocalTarget(path)
 
 
 def test():
