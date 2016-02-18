@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pandas as pd
 import random
 
@@ -276,15 +277,18 @@ def preprocess(df):
     print("%.3f of the spearmanr > 0" % ratio(df.spearmanr))
     print("%.3f of the p-value < 0.05" % ratio(df[df.spearmanr > 0]['pval'],
                                                filter_fn=lambda x: x < 0.05))
+    print("\n")
     return df.copy()
 
 
 def analysis():
+    print("random conformation querying biolip")
+    rnd_df = pd.read_csv(VinaRandomizedBioLipFixed().output().path,
+                         index_col=0)
 
     print("native structures in biolip querying biolip")
     df = pd.read_csv(Read().output().path, index_col=0)
 
-    print
     print("predicted structures in biolip querying biolip")
     fixed_df = pd.read_csv(VinaPredictBioLipFixed().output().path, index_col=0)
 
@@ -293,6 +297,12 @@ def analysis():
                                         fixed_df[merged_on],
                                         on=merged_on,
                                         how="inner")
+
+    shared_queries_templates = pd.merge(rnd_df[merged_on],
+                                        shared_queries_templates[merged_on],
+                                        on=merged_on,
+                                        how="inner")
+
     sampled_queries = random.sample(shared_queries_templates["query"].unique(),
                                     2000)
     shared_queries_templates = shared_queries_templates[
@@ -300,25 +310,28 @@ def analysis():
 
     df = pd.merge(df, shared_queries_templates, on=merged_on)
     fixed_df = pd.merge(fixed_df, shared_queries_templates, on=merged_on)
+    rnd_df = pd.merge(rnd_df, shared_queries_templates, on=merged_on)
 
     df.sort_values(by=merged_on, inplace=True)
     fixed_df.sort_values(by=merged_on, inplace=True)
+    rnd_df.sort_values(by=merged_on, inplace=True)
 
     assert (df.ps_score.equals(fixed_df.ps_score))
     assert (df.seq_identity.equals(fixed_df.seq_identity))
+    assert (df.seq_identity.equals(rnd_df.seq_identity))
 
     # kcombu yield can yield different Tc for the same pair
     def checkTc():
-        df[df.Tc.ne(fixed_df.Tc)].describe()
-        fixed_df[df.Tc.ne(fixed_df.Tc)].describe()
-        df[df.Tc.eq(fixed_df.Tc)].describe()
-        fixed_df[df.Tc.eq(fixed_df.Tc)].describe()
+        diff_tc = df[df.Tc.ne(fixed_df.Tc)]
+        print("%d out of %d Tc values are different" %
+              (diff_tc.shape[0], df.shape[0]))
         assert (df.Tc.equals(fixed_df.Tc))
 
     df = preprocess(df.copy())
 
-    print
     fixed_df = preprocess(fixed_df.copy())
+
+    rnd_df = preprocess(rnd_df.copy())
 
     ifn = CheckVinaResultAccuracy().output().path
     actual_rmsd_df = pd.read_csv(ifn, index_col=0)
@@ -327,6 +340,11 @@ def analysis():
                                  "TM-score", "template"]]
 
     fixed_rmsd_accuracies = pd.merge(fixed_accuracies, actual_rmsd_df)
+
+    rnd_accuracies = rnd_df[["query", "spearmanr", "pval", "tc_times_ps",
+                             "TM-score", "template"]]
+
+    rnd_rmsd_accuracies = pd.merge(rnd_accuracies, actual_rmsd_df)
 
     # fixed_rmsd_accuracies.plot(kind='scatter', x='rmsd', y="spearmanr")
 
@@ -383,11 +401,10 @@ def analysis():
 
         # tc_times_ps ranked spearmanr
         print(
-            "################################################################################"
-        )
+            "################################################################################")
         ranked_spearmanr = fixed_rmsd_accuracies.groupby("query").apply(
             lambda g: g.sort_values("tc_times_ps", ascending=False).iloc[0][["spearmanr", "rmsd"]])
-        print "AUC:", calculateAUC(ranked_spearmanr)
+        print("AUC:", calculateAUC(ranked_spearmanr))
         print
         pprint(ranked_spearmanr.corr())
         print
@@ -401,14 +418,19 @@ def analysis():
     comparedWithRmsd(fixed_rmsd_accuracies[fixed_rmsd_accuracies["TM-score"] <
                                            0.5])
 
+    comparedWithRmsd(rnd_rmsd_accuracies[rnd_rmsd_accuracies["TM-score"] >
+                                         0.5])
+    comparedWithRmsd(rnd_rmsd_accuracies[rnd_rmsd_accuracies["TM-score"] <
+                                         0.5])
+
 
 if __name__ == "__main__":
     luigi.build(
         [
             Read(),
             # CutRedundancy(),
-            CuttedVinaPredictBioLip(),
-            UnCuttedVinaPredictBioLip(),
+            # CuttedVinaPredictBioLip(),
+            # UnCuttedVinaPredictBioLip(),
             CheckVinaResultAccuracy(),
             VinaPredictBioLipFixed(),
             VinaRandomizedBioLipFixed(),
