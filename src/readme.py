@@ -1,4 +1,5 @@
 import pandas as pd
+import random
 
 import matplotlib
 matplotlib.use('Agg')
@@ -152,6 +153,16 @@ class VinaRandomizedBioLipFixed(VinaPredictBioLipFixed):
         path = "/work/jaydy/working/vina_biolip_sampled_rnd.csv"
         return luigi.LocalTarget(path)
 
+    def run(self):
+        sampled_df = pd.DataFrame()
+        for name in self.check():
+            task = QueryVinaRandomResultOnBioLipFixedPocket(name)
+            with task.output().open('r') as ifs:
+                result = json.loads(ifs.read())
+                df = read2Df(result, name)
+                sampled_df = sampled_df.append(df, ignore_index=True)
+        sampled_df.to_csv(self.output().path, ignore_index=True)
+
 
 class CuttedVinaPredictBioLipFixed(luigi.Task):
     def requires(self):
@@ -277,29 +288,32 @@ def analysis():
     print("predicted structures in biolip querying biolip")
     fixed_df = pd.read_csv(VinaPredictBioLipFixed().output().path, index_col=0)
 
-    df_queries = set(df['query'].tolist())
-    fixed_df_queries = set(fixed_df['query'].tolist())
-    shared_queries = df_queries & fixed_df_queries
+    merged_on = ["query", "template"]
+    shared_queries_templates = pd.merge(df[merged_on],
+                                        fixed_df[merged_on],
+                                        on=merged_on,
+                                        how="inner")
+    sampled_queries = random.sample(shared_queries_templates["query"].unique(),
+                                    2000)
+    shared_queries_templates = shared_queries_templates[
+        shared_queries_templates["query"].isin(sampled_queries)]
 
-    df = df[df['query'].isin(shared_queries)]
-    fixed_df = fixed_df[fixed_df['query'].isin(shared_queries)]
+    df = pd.merge(df, shared_queries_templates, on=merged_on)
+    fixed_df = pd.merge(fixed_df, shared_queries_templates, on=merged_on)
 
-    # def checkSameTemplates(df1, df2):
-    #     shared_queries = set(df1['query']) & set(df2['query'])
-    #     same, different = [], []
-    #     for query in shared_queries:
-    #         tmp1 = df1[df1['query'] == query]["template"]
-    #         tmp2 = df2[df2['query'] == query]["template"]
-    #         if set(tmp1) == set(tmp2):
-    #             same.append(query)
-    #         else:
-    #             different.append(query)
-    #     return same, different
+    df.sort_values(by=merged_on, inplace=True)
+    fixed_df.sort_values(by=merged_on, inplace=True)
 
-    # same, different = checkSameTemplates(fixed_df, df)
+    assert (df.ps_score.equals(fixed_df.ps_score))
+    assert (df.seq_identity.equals(fixed_df.seq_identity))
 
-    # TODO: why same query found different templates, such as 2h3q_PBU_A_1.pdb
-    # TODO: because of different settings for the binding site volumne
+    # kcombu yield can yield different Tc for the same pair
+    def checkTc():
+        df[df.Tc.ne(fixed_df.Tc)].describe()
+        fixed_df[df.Tc.ne(fixed_df.Tc)].describe()
+        df[df.Tc.eq(fixed_df.Tc)].describe()
+        fixed_df[df.Tc.eq(fixed_df.Tc)].describe()
+        assert (df.Tc.equals(fixed_df.Tc))
 
     df = preprocess(df.copy())
 
