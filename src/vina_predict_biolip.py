@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
+import os
+import shlex
+import json
 import luigi
 import pybel
-import os
 import sample_confs
 import biolip_query_biolip
 import subprocess32
-import shlex
-import json
 import dockedpose
 
 from biolip import BioLipReferencedSpearmanR
 from biolip import FixedPocketBioLipReferencedSpearmanR
+from restore_order import getPredConfs, getOrderedSdf
 
 OUTPUT_DIR = "/ddnB/work/jaydy/working/vina_biolip/"
 
@@ -192,24 +193,43 @@ class VinaResultAccuracy(VinaPredictBiolipStructure):
         return rmsd(predicted_mol, crystal_mol)
 
     def CMS(self):
-        vina_task = VinaPredictBiolipStructure(self.lig_pdb)
+        vina_task = self.requires()
         predicted_pdbqt = vina_task.output().path
         crystal_sdf = vina_task.lig_sdf
         predicted_sdf = os.path.splitext(predicted_pdbqt)[0] + '.sdf'
-        if not os.path.exists(predicted_sdf):
-            # use the first predicted model
-            predicted_mol = next(pybel.readfile('pdbqt', predicted_pdbqt))
-            predicted_mol.write('sdf', predicted_sdf)
+
+        init_sdf = [l.rstrip() for l in file(crystal_sdf)]
+        vina_in = [l.rstrip() for l in file(vina_task.lig_pdbqt)]
+        vina_out = [l.rstrip() for l in file(predicted_pdbqt)]
+        all_atom_zones = getPredConfs(vina_out)
+
+        ordered_sdfs = []
+        for atom_zone in all_atom_zones:
+            ordered_sdfs.append(getOrderedSdf(init_sdf, atom_zone, vina_in))
+
+        with open(predicted_sdf, 'w') as ofs:
+            for line in ordered_sdfs[0]:
+                ofs.write(line)
+                ofs.write("\n")
 
         prt_pdb = vina_task.prtPdb
-        cmds = shlex.split("cms -frc --lig1 %s --prt1 %s --lig2 %s --prt2 %s" %
-                           (predicted_sdf, prt_pdb, crystal_sdf, prt_pdb))
-        print(cmds)
-        subprocess32.call(cmds)
+        cmd = "cms -frc --lig1 %s --prt1 %s --lig2 %s --prt2 %s" % (
+            predicted_sdf, prt_pdb, crystal_sdf, prt_pdb)
+        print(cmd)
+        cmds = shlex.split(cmd)
+        output = subprocess32.check_output(cmds)
+        for line in output.splitlines():
+            if "cms value" in line:
+                cms = float(line.split()[-1])
+            if "fraction value" in line:
+                fraction = float(line.split()[-1])
+
+        return cms, fraction
 
     def run(self):
         rmsd = self.caculateRMSD()
-        result = {'rmsd': rmsd}
+        cms, fraction = self.CMS()
+        result = {'rmsd': rmsd, "cms": cms, "fraction": fraction}
         to_write = json.dumps(result,
                               sort_keys=True,
                               indent=4,
@@ -236,11 +256,12 @@ def main(name):
     luigi.build(
         [
             # VinaPredictBiolipStructure(name),
-            # VinaResultAccuracy(name),
+            VinaResultAccuracy(name),
             # QueryVinaResultOnBioLip(name),
             # QueryVinaResultOnBioLipFixedPocket(name),
             # VinaRandomizeBiolipStructure(name),
-            QueryVinaRandomResultOnBioLipFixedPocket(name),
+            # QueryVinaRandomResultOnBioLipFixedPocket(name),
+            VinaRandomAccuracy(name),
         ],
         local_scheduler=True)
     pass
