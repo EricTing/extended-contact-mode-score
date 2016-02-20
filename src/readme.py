@@ -217,15 +217,56 @@ class CheckVinaResultAccuracy(luigi.Task):
         return completes
 
     def run(self):
-        index, data = [], []
+        index, rmsd, cms, fraction = [], [], [], []
         for name in self.check():
             task = vina_predict_biolip.VinaResultAccuracy(name)
             with task.output().open('r') as ifs:
                 result = json.loads(ifs.read())
-                data.append(result['rmsd'])
+                rmsd.append(result['rmsd'])
+                cms.append(result["cms"])
+                fraction.append(result["fraction"])
                 index.append(name)
 
-        df = pd.DataFrame({'query': index, 'rmsd': data})
+        df = pd.DataFrame({'query': index,
+                           'rmsd': rmsd,
+                           "cms": cms,
+                           "fraction": fraction})
+        df.to_csv(self.output().path, ignore_index=True)
+
+
+class CheckVinaRandomRmsd(luigi.Task):
+    def output(self):
+        path = "../dat/vina_rnd_rmsd.csv"
+        return luigi.LocalTarget(path)
+
+    def check(self):
+        completes, incompletes = [], []
+        for name in sampled_names:
+            task = vina_predict_biolip.VinaRandomAccuracy(name)
+            if task.complete():
+                completes.append(name)
+            else:
+                incompletes.append(name)
+        print("{} completes and {} incompletes".format(
+            len(completes), len(incompletes)))
+
+        return completes
+
+    def run(self):
+        index, rmsd, cms, fraction = [], [], [], []
+        for name in self.check():
+            task = vina_predict_biolip.VinaRandomAccuracy(name)
+            with task.output().open('r') as ifs:
+                result = json.loads(ifs.read())
+                rmsd.append(result['rmsd'])
+                cms.append(result["cms"])
+                fraction.append(result["fraction"])
+                index.append(name)
+
+        df = pd.DataFrame({'query': index,
+                           'rmsd': rmsd,
+                           "cms": cms,
+                           "fraction": fraction})
         df.to_csv(self.output().path, ignore_index=True)
 
 
