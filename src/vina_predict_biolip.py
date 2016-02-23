@@ -192,11 +192,19 @@ class VinaResultAccuracy(VinaPredictBiolipStructure):
 
         return rmsd(predicted_mol, crystal_mol)
 
+    @property
+    def predicted_sdf(self):
+        vina_task = self.requires()
+        predicted_pdbqt = vina_task.output().path
+        predicted_sdf = os.path.splitext(predicted_pdbqt)[0] + '.sdf'
+        return predicted_sdf
+
+
     def CMS(self):
         vina_task = self.requires()
         predicted_pdbqt = vina_task.output().path
         crystal_sdf = vina_task.lig_sdf
-        predicted_sdf = os.path.splitext(predicted_pdbqt)[0] + '.sdf'
+        predicted_sdf = self.predicted_sdf
 
         init_sdf = [l.rstrip() for l in file(crystal_sdf)]
         vina_in = [l.rstrip() for l in file(vina_task.lig_pdbqt)]
