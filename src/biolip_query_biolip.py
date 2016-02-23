@@ -20,6 +20,10 @@ class Path(luigi.Task):
     lig_dir = luigi.Parameter(default="/ddnB/work/jaydy/dat/BioLip/ligand_nr/")
 
     @property
+    def lig_code(self):
+        return self.lig_pdb.split('/')[1].split('.')[0]
+
+    @property
     def pdbqt_dir(self):
         return os.path.join(
             "/ddnB/work/jaydy/dat/BioLip/prt_pdbqt/",

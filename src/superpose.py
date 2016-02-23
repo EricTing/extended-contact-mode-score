@@ -4,10 +4,15 @@ from __future__ import print_function
 
 import os
 import re
+import json
+import shlex
+import subprocess32
 import luigi
 import pybel
 from vina_predict_biolip import VinaResultAccuracy
 from vina_predict_biolip import QueryVinaResultOnBioLipFixedPocket
+from biolip_query_biolip import Path
+from readme import read2Df, similarPocketsLigands, clean
 
 
 def addLig2Prt(lig_sdf, prt_pdb, concated_ofn):
@@ -28,6 +33,10 @@ class SuperPose(VinaResultAccuracy):
     """superpose the predicted protein-ligand complex onto the template's protein
     """
 
+    superpose_perl = luigi.Parameter(
+        default=
+        "/home/jaydy/Workspace/Bitbucket/GeauxFindSite/src/superpose.pl")
+
     def requires(self):
         """
         VinaResultAccuracy provides predicted SDF file,
@@ -41,6 +50,8 @@ class SuperPose(VinaResultAccuracy):
 
     def append_ligand(self):
         """applend the predicted ligand to the native protein
+
+        return the path of the concated pdb
         """
         accuracy_task = VinaResultAccuracy(self.lig_pdb)
         prt_pdb = accuracy_task.prtPdb
@@ -48,9 +59,33 @@ class SuperPose(VinaResultAccuracy):
         concated_pdb = os.path.join(accuracy_task.workdir(),
                                     self.lig_pdb + '.concated.pdb')
         addLig2Prt(predicted_sdf, prt_pdb, concated_pdb)
+        return concated_pdb
+
+    def superpose(self):
+        """superpose
+        """
+        result = json.loads(QueryVinaResultOnBioLipFixedPocket(
+            self.lig_pdb).output().open('r').read())
+        dset = read2Df(result, self.lig_pdb)
+        dset = similarPocketsLigands(clean(dset), minimum_Tc=0.4)
+        work_dir = os.path.join(self.workdir(), 'superpose')
+        try:
+            os.makedirs(work_dir)
+        except Exception as detail:
+            print(detail)
+
+        mob_pdb = self.append_ligand()
+        for template_pdb in dset.index:
+            ref_pdb = Path(template_pdb).prtPdb
+            lig_code = Path(template_pdb).lig_code
+            sup_pdb = os.path.join(work_dir, lig_code + '.sup.pdb')
+            cmd = shlex.split("perl %s all %s %s %s" %
+                              (self.superpose_perl, ref_pdb, mob_pdb, sup_pdb))
+            subprocess32.call(cmd)
 
     def run(self):
         self.append_ligand()
+        self.superpose()
 
 
 def test():
