@@ -196,7 +196,7 @@ class BioLipReferencedSpearmanR:
                         pc1, pc2 = self.alignProteins(self.pkt, self_res,
                                                       ref_pkt, ref_res)
                         kcombu, lc1, lc2 = self.alignLigands(self.lig, ref_lig)
-                        template_lig_atn, query_lig_atn = kcombu.getMatchingSerialNums(
+                        query_lig_atn, template_lig_atn = kcombu.getMatchingSerialNums(
                         )
 
                         vec1 = contactVector(lc1, pc1)
