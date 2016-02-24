@@ -6,6 +6,7 @@ import os
 import re
 import json
 import shlex
+import shutil
 import subprocess32
 import luigi
 import pybel
@@ -62,7 +63,7 @@ class SuperPose(VinaResultAccuracy):
         return concated_pdb
 
     def superpose(self):
-        """superpose
+        """superpose and copy the referenced protein and ligand
         """
         result = json.loads(QueryVinaResultOnBioLipFixedPocket(
             self.lig_pdb).output().open('r').read())
@@ -78,10 +79,14 @@ class SuperPose(VinaResultAccuracy):
         for template_pdb in dset.index:
             ref_pdb = Path(template_pdb).prtPdb
             lig_code = Path(template_pdb).lig_code
+            ref_lig = Path(lig_code).ligPdb() + '.pdb'
             sup_pdb = os.path.join(work_dir, lig_code + '.sup.pdb')
             cmd = shlex.split("perl %s all %s %s %s" %
                               (self.superpose_perl, ref_pdb, mob_pdb, sup_pdb))
             subprocess32.call(cmd)
+
+            shutil.copy(ref_pdb, work_dir)
+            shutil.copy(ref_lig, work_dir)
 
     def run(self):
         self.append_ligand()
