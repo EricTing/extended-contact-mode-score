@@ -10,6 +10,7 @@
     - [Prove](#sec-2-1-1)
   - [Use mutiple template pockets and ligands](#sec-2-2)
   - [Random prediction](#sec-2-3)
+- [Case studies](#sec-3)
 
 # eXtended Contact Mode Score (xCMS)<a id="orgheadline7"></a>
 
@@ -473,7 +474,7 @@ The value of xCms should be <a id="orgradiotarget5">back-compatible</a> with Cms
         </tbody>
         </table>
 
-# TODO Assess AutoVina on DUDE<a id="orgheadline12"></a>
+# DONE Assess AutoVina on DUDE<a id="orgheadline12"></a>
 
 ## DONE Presumption<a id="orgheadline9"></a>
 
@@ -502,7 +503,7 @@ Similar ligand and pockets yield high spearmanr between the distance vectors
     <http://zhanglab.ccmb.med.umich.edu/BioLiP/download.html>
     1.  filter the ligands with
         1.  size constraints (6 < size)
-        2.  [ ] tanimoto coefficients > 0.5 (using FastSearch in OpenBabel <http://openbabel.org/wiki/FastSearch>)
+        2.  [X] tanimoto coefficients > 0.5 (using FastSearch in OpenBabel <http://openbabel.org/wiki/FastSearch>)
             Note that pkcombu and babel gives different tanimoto coefficients for the same ligand pair
     2.  [X] Index the ligands
         1.  [X] use only small ligands with #atom < 999
@@ -524,6 +525,14 @@ Similar ligand and pockets yield high spearmanr between the distance vectors
         ```
     5.  BioLip-referenced SpearmanR
 
-## TODO Random prediction<a id="orgheadline11"></a>
+## DONE Random prediction<a id="orgheadline11"></a>
 
 AutoVina has an option for random prediciton of ligand within the binding site.
+
+# Case studies<a id="orgheadline13"></a>
+
+1.  script
+    ./src/superpose.py
+2.  [X] high global similarity
+    2yiw\_YIW\_A\_1.pdb (TM-score = 0.75643)
+3.  [ ] low global similarity
