@@ -159,6 +159,7 @@ class BioLipReferencedSpearmanR:
 
     def calculate(self,
                   maximum_search_results=100,
+                  tani=0.5,
                   max_tani=1.0,
                   minimum_size=6):
         self.pkt_path = tempfile.mkstemp()[1]
@@ -168,6 +169,7 @@ class BioLipReferencedSpearmanR:
         ref_pkt_path = tempfile.mkstemp()[1]
         query = BioLipQuery(self.lig_path,
                             index="/ddnB/work/jaydy/dat/BioLip/ligand_nr.fs",
+                            tani=tani,
                             max_tani=max_tani,
                             minimum_size=minimum_size,
                             maximum_search_results=maximum_search_results)
