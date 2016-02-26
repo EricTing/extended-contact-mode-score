@@ -1,26 +1,26 @@
 from __future__ import print_function
-import pandas as pd
+
 import random
-
 import matplotlib
-matplotlib.use('Agg')
-
 import json
 import os
-from sklearn import metrics
-from pprint import pprint
-import minepy
-
 import luigi
-
+import minepy
 import biolip_query_biolip
 import vina_predict_biolip
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn import metrics
+from pprint import pprint
 
 from vina_predict_biolip import QueryVinaResultOnBioLipFixedPocket
 from vina_predict_biolip import QueryVinaRandomResultOnBioLipFixedPocket
 
-sampled_list = "../dat/biolipbiolip_sampled_2.txt"
-sampled_names = [_.rstrip() for _ in file(sampled_list)]
+SAMPLED_LIST = "../dat/biolipbiolip_sampled_2.txt"
+SAMPLED_NAMES = [_.rstrip() for _ in file(SAMPLED_LIST)]
 
 
 def read2Df(result, task_name):
@@ -37,7 +37,7 @@ class Read(luigi.Task):
 
     def run(self):
         sampled_df = pd.DataFrame()
-        for name in sampled_names:
+        for name in SAMPLED_NAMES:
             task = biolip_query_biolip.BioLipBioLip(name)
             if task.complete():
                 with task.output().open('r') as ifs:
@@ -85,7 +85,7 @@ class CuttedVinaPredictBioLip(luigi.Task):
 
     def check(self):
         completes, incompletes = [], []
-        for name in sampled_names:
+        for name in SAMPLED_NAMES:
             task = vina_predict_biolip.QueryVinaResultOnBioLip(name)
             if task.complete():
                 completes.append(name)
@@ -112,7 +112,7 @@ class CuttedVinaPredictBioLip(luigi.Task):
 class VinaPredictBioLipFixed(luigi.Task):
     def check(self):
         completes, incompletes = [], []
-        for name in sampled_names:
+        for name in SAMPLED_NAMES:
             task = QueryVinaResultOnBioLipFixedPocket(name)
             if task.complete():
                 completes.append(name)
@@ -140,7 +140,7 @@ class VinaPredictBioLipFixed(luigi.Task):
 class VinaRandomizedBioLipFixed(VinaPredictBioLipFixed):
     def check(self):
         completes, incompletes = [], []
-        for name in sampled_names:
+        for name in SAMPLED_NAMES:
             task = QueryVinaRandomResultOnBioLipFixedPocket(name)
             if task.complete():
                 completes.append(name)
@@ -205,7 +205,7 @@ class CheckVinaResultAccuracy(luigi.Task):
 
     def check(self):
         completes, incompletes = [], []
-        for name in sampled_names:
+        for name in SAMPLED_NAMES:
             task = vina_predict_biolip.VinaResultAccuracy(name)
             if task.complete():
                 completes.append(name)
@@ -234,6 +234,36 @@ class CheckVinaResultAccuracy(luigi.Task):
         df.to_csv(self.output().path, ignore_index=True)
 
 
+class CheckVinaResultAgainstIdenticalSystems(luigi.Task):
+    def output(self):
+        path = "/work/jaydy/working/vina_biolip_identical_xcms.csv"
+        return luigi.LocalTarget(path)
+
+    def check(self):
+        completes, incompletes = [], []
+        for name in SAMPLED_NAMES:
+            task = vina_predict_biolip.QueryVinaResultOnIdenticalTemplate(name)
+            if task.complete():
+                completes.append(name)
+            else:
+                incompletes.append(name)
+        print("{} completes and {} incompletes".format(
+            len(completes), len(incompletes)))
+
+        return completes
+
+    def run(self):
+        results = {}
+        for name in self.check():
+            task = vina_predict_biolip.QueryVinaResultOnIdenticalTemplate(name)
+            with task.output().open('r') as ifs:
+                result = json.loads(ifs.read())
+                results[name] = result
+
+        df = pd.DataFrame(results).T
+        df.to_csv(self.output().path, ignore_index=True)
+
+
 class CheckVinaRandomRmsd(luigi.Task):
     def output(self):
         path = "../dat/vina_rnd_rmsd.csv"
@@ -241,7 +271,7 @@ class CheckVinaRandomRmsd(luigi.Task):
 
     def check(self):
         completes, incompletes = [], []
-        for name in sampled_names:
+        for name in SAMPLED_NAMES:
             task = vina_predict_biolip.VinaRandomAccuracy(name)
             if task.complete():
                 completes.append(name)
@@ -288,9 +318,10 @@ def clean(df):
     return df
 
 
-def similarPocketsLigands(df):
+def similarPocketsLigands(df, minimum_Tc=0.5):
     queries_before = df['query'].unique().size
-    df = df[(df.Tc > 0.5) & (df.ps_score > 0.4)]
+    df = df[(df.Tc > minimum_Tc) & (df.ps_score > 0.4) & (df.num_binding_res >=
+                                                          10)]
     print("{} queries after filtering dissimilar pockets and ligands".format(
         df['query'].unique().size))
     queries_after = df['query'].unique().size
@@ -319,20 +350,23 @@ def preprocess(df):
     print("%.3f of the p-value < 0.05" % ratio(df[df.spearmanr > 0]['pval'],
                                                filter_fn=lambda x: x < 0.05))
     print("\n")
-    return df.copy()
+    return df
 
 
-def analysis():
-    print("random conformation querying biolip")
+def loadData():
+    """find the shared templates
+    """
+    print("loading random conformation querying biolip ...")
     rnd_df = pd.read_csv(VinaRandomizedBioLipFixed().output().path,
                          index_col=0)
 
-    print("native structures in biolip querying biolip")
+    print("loading native structures in biolip querying biolip ...")
     df = pd.read_csv(Read().output().path, index_col=0)
 
-    print("predicted structures in biolip querying biolip")
+    print("loading predicted structures in biolip querying biolip ...")
     fixed_df = pd.read_csv(VinaPredictBioLipFixed().output().path, index_col=0)
 
+    print("merge to find shared queries and templates ...")
     merged_on = ["query", "template"]
     shared_queries_templates = pd.merge(df[merged_on],
                                         fixed_df[merged_on],
@@ -344,8 +378,10 @@ def analysis():
                                         on=merged_on,
                                         how="inner")
 
+    num_sampled = 2000
+    print("sample %d queries" % num_sampled)
     sampled_queries = random.sample(shared_queries_templates["query"].unique(),
-                                    2000)
+                                    num_sampled)
     shared_queries_templates = shared_queries_templates[
         shared_queries_templates["query"].isin(sampled_queries)]
 
@@ -357,9 +393,10 @@ def analysis():
     fixed_df.sort_values(by=merged_on, inplace=True)
     rnd_df.sort_values(by=merged_on, inplace=True)
 
-    assert (df.ps_score.equals(fixed_df.ps_score))
-    assert (df.seq_identity.equals(fixed_df.seq_identity))
-    assert (df.seq_identity.equals(rnd_df.seq_identity))
+    print("check consistency of ps_score and Tc")
+    assert df.ps_score.equals(fixed_df.ps_score)
+    assert df.seq_identity.equals(fixed_df.seq_identity)
+    assert df.seq_identity.equals(rnd_df.seq_identity)
 
     # kcombu yield can yield different Tc for the same pair
     def checkTc():
@@ -368,33 +405,50 @@ def analysis():
               (diff_tc.shape[0], df.shape[0]))
         assert (df.Tc.equals(fixed_df.Tc))
 
-    df = preprocess(df.copy())
+    return df, fixed_df, rnd_df
 
-    fixed_df = preprocess(fixed_df.copy())
 
-    rnd_df = preprocess(rnd_df.copy())
+def plot_figures():
+
+    df, fixed_df, rnd_df = loadData()
+
+    df = clean(df.copy())
+
+    data = df.groupby([pd.cut(df['Tc'], 20), pd.cut(df['ps_score'], 20)])[
+        'spearmanr'].mean().unstack()
+    data = data.reindex(index=data.index[::-1])
+    sns.heatmap(data)
+    plt.title(
+        "Heatmap for Spearman coefficient as a function of Tc and ps-score")
+    plt.tight_layout()
+    plt.savefig("native_heatmap.png")
+
+
+def analysis():
+
+    df, fixed_df, rnd_df = loadData()
 
     ifn = CheckVinaResultAccuracy().output().path
     actual_rmsd_df = pd.read_csv(ifn, index_col=0)
 
-    fixed_accuracies = fixed_df[["query", "spearmanr", "pval", "tc_times_ps",
-                                 "TM-score", "template"]]
+    fiexed_xcms = fixed_df[["query", "spearmanr", "pval", "tc_times_ps",
+                            "TM-score", "template"]]
 
-    fixed_rmsd_accuracies = pd.merge(fixed_accuracies, actual_rmsd_df)
+    fixed_rmsd_xcms = pd.merge(fiexed_xcms, actual_rmsd_df)
 
-    rnd_accuracies = rnd_df[["query", "spearmanr", "pval", "tc_times_ps",
-                             "TM-score", "template"]]
+    rnd_xcms = rnd_df[["query", "spearmanr", "pval", "tc_times_ps", "TM-score",
+                       "template"]]
 
-    rnd_rmsd_accuracies = pd.merge(rnd_accuracies, actual_rmsd_df)
+    rnd_rmsd_xcms = pd.merge(rnd_xcms, actual_rmsd_df)
 
-    # fixed_rmsd_accuracies.plot(kind='scatter', x='rmsd', y="spearmanr")
+    # fixed_rmsd_xcms.plot(kind='scatter', x='rmsd', y="spearmanr")
 
     # plt.savefig('fixed_rmsd_spearmanr.png')
 
-    # print minepy.minestats(fixed_rmsd_accuracies.rmsd,
-    #                        fixed_rmsd_accuracies.spearmanr)
+    # print minepy.minestats(fixed_rmsd_xcms.rmsd,
+    #                        fixed_rmsd_xcms.spearmanr)
 
-    def comparedWithRmsd(fixed_rmsd_accuracies):
+    def comparedWithRmsd(fixed_rmsd_xcms):
         def calculateAUC(scores):
             scores["native_like"] = scores.rmsd.apply(
                 lambda r: 1 if r < 3 else 0)
@@ -407,7 +461,7 @@ def analysis():
         # averaged spearmanr
         print(
             "################################################################################")
-        ave_spearmanr = fixed_rmsd_accuracies.groupby("query").apply(
+        ave_spearmanr = fixed_rmsd_xcms.groupby("query").apply(
             lambda g: g[["spearmanr", "rmsd"]].mean())
         print("AUC:", calculateAUC(ave_spearmanr))
         pprint(ave_spearmanr.corr())
@@ -430,7 +484,7 @@ def analysis():
         # tc_times_ps weighted spearmanr
         print(
             "################################################################################")
-        weighted_spearmanr = fixed_rmsd_accuracies.groupby("query").apply(
+        weighted_spearmanr = fixed_rmsd_xcms.groupby("query").apply(
             weighted)
         print("AUC:", calculateAUC(weighted_spearmanr))
         pprint(weighted_spearmanr.corr())
@@ -443,7 +497,7 @@ def analysis():
         # tc_times_ps ranked spearmanr
         print(
             "################################################################################")
-        ranked_spearmanr = fixed_rmsd_accuracies.groupby("query").apply(
+        ranked_spearmanr = fixed_rmsd_xcms.groupby("query").apply(
             lambda g: g.sort_values("tc_times_ps", ascending=False).iloc[0][["spearmanr", "rmsd"]])
         print("AUC:", calculateAUC(ranked_spearmanr))
         print
@@ -454,15 +508,11 @@ def analysis():
         # ranked_spearmanr.plot(kind='scatter', x='rmsd', y="spearmanr")
         # plt.savefig('rmsd_ranked_spearmanr.png')
 
-    comparedWithRmsd(fixed_rmsd_accuracies[fixed_rmsd_accuracies["TM-score"] >
-                                           0.5])
-    comparedWithRmsd(fixed_rmsd_accuracies[fixed_rmsd_accuracies["TM-score"] <
-                                           0.5])
+    comparedWithRmsd(fixed_rmsd_xcms[fixed_rmsd_xcms["TM-score"] > 0.5])
+    comparedWithRmsd(fixed_rmsd_xcms[fixed_rmsd_xcms["TM-score"] < 0.5])
 
-    comparedWithRmsd(rnd_rmsd_accuracies[rnd_rmsd_accuracies["TM-score"] >
-                                         0.5])
-    comparedWithRmsd(rnd_rmsd_accuracies[rnd_rmsd_accuracies["TM-score"] <
-                                         0.5])
+    comparedWithRmsd(rnd_rmsd_xcms[rnd_rmsd_xcms["TM-score"] > 0.5])
+    comparedWithRmsd(rnd_rmsd_xcms[rnd_rmsd_xcms["TM-score"] < 0.5])
 
 
 if __name__ == "__main__":
@@ -475,6 +525,8 @@ if __name__ == "__main__":
             CheckVinaResultAccuracy(),
             VinaPredictBioLipFixed(),
             VinaRandomizedBioLipFixed(),
+            CheckVinaRandomRmsd(),
+            CheckVinaResultAgainstIdenticalSystems(),
             # CuttedVinaPredictBioLipFixed(),
         ],
         local_scheduler=True)
