@@ -111,7 +111,7 @@ class QueryVinaResultOnBioLip(VinaPredictBiolipStructure):
     def requires(self):
         return VinaPredictBiolipStructure(self.lig_pdb)
 
-    def __run(self, vina_task):
+    def helper_run(self, vina_task):
         prt_pdb = vina_task.prtPdb
         lig_pdbqt = vina_task.output().path
         biolip_spearmanr = BioLipReferencedSpearmanR(lig_pdbqt, prt_pdb)
@@ -127,7 +127,7 @@ class QueryVinaResultOnBioLip(VinaPredictBiolipStructure):
 
     def run(self):
         vina_task = self.requires()
-        to_write = self.__run(vina_task)
+        to_write = self.helper_run(vina_task)
         with open(self.output().path, 'w') as ofs:
             ofs.write(to_write)
 
@@ -160,6 +160,39 @@ class QueryVinaResultOnBioLipFixedPocket(QueryVinaResultOnBioLip):
     def run(self):
         vina_task = self.requires()
         to_write = self.runFixed(vina_task)
+        with open(self.output().path, 'w') as ofs:
+            ofs.write(to_write)
+
+
+class QueryVinaResultOnIdenticalTemplate(QueryVinaResultOnBioLip):
+    """To check back-compatibility of XCMS to CMS
+    """
+
+    def output(self):
+        path = self.requires().output().path + '.fixed.identical.json'
+        return luigi.LocalTarget(path)
+
+    def helper_run(self, ):
+        """helper function
+        """
+        vina_task = self.requires()
+        prt_pdb = vina_task.prtPdb
+        predicted_lig_pdbqt = vina_task.output().path
+        native_lig_sdf = vina_task.lig_pdbqt
+
+        biolip_spearmanr = BioLipReferencedSpearmanR(predicted_lig_pdbqt,
+                                                     prt_pdb)
+        result = biolip_spearmanr.calculateAgainstOneSystem(native_lig_sdf,
+                                                            prt_pdb)
+
+        to_write = json.dumps(result,
+                              sort_keys=True,
+                              indent=4,
+                              separators=(',', ': '))
+        return to_write
+
+    def run(self):
+        to_write = self.helper_run()
         with open(self.output().path, 'w') as ofs:
             ofs.write(to_write)
 
@@ -198,7 +231,6 @@ class VinaResultAccuracy(VinaPredictBiolipStructure):
         predicted_pdbqt = vina_task.output().path
         predicted_sdf = os.path.splitext(predicted_pdbqt)[0] + '.sdf'
         return predicted_sdf
-
 
     def CMS(self):
         vina_task = self.requires()
@@ -256,8 +288,12 @@ class VinaRandomAccuracy(VinaResultAccuracy):
 
 
 def test():
-    task = VinaResultAccuracy("3ofl_JHM_B_1.pdb")
-    luigi.build([task], local_scheduler=True)
+    task1 = VinaResultAccuracy("3ofl_JHM_B_1.pdb")
+    task2 = QueryVinaResultOnIdenticalTemplate("3ofl_JHM_B_1.pdb")
+    task3 = QueryVinaResultOnIdenticalTemplate("1yst_U10_L_1.pdb")
+    task4 = QueryVinaResultOnIdenticalTemplate("3mbm_717_C_1.pdb")
+    task5 = QueryVinaResultOnIdenticalTemplate("3jdw_ORN_A_1.pdb")
+    luigi.build([task1, task2, task3, task4, task5], local_scheduler=True)
 
 
 def main(name):
@@ -270,6 +306,7 @@ def main(name):
             # VinaRandomizeBiolipStructure(name),
             # QueryVinaRandomResultOnBioLipFixedPocket(name),
             VinaRandomAccuracy(name),
+            QueryVinaResultOnIdenticalTemplate(name),
         ],
         local_scheduler=True)
     pass

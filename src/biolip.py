@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import os
 import pybel
 import shlex
 import subprocess32
 import tempfile
 import numpy as np
+
 from collections import defaultdict
+from scipy.spatial import distance
 
 from astex_xcms import runPkcombu
 from apoc_inputs import ApocInput
@@ -47,7 +51,7 @@ class FastSearch:
             cmd = "babel %s %s -s %s -at%f,%f" % (
                 self.index, ofn, self.lig_path, self.tani, self.max_tani)
             if verbose:
-                print cmd
+                print(cmd)
             args = shlex.split(cmd)
             subprocess32.call(args)
             mols = [mol
@@ -59,8 +63,8 @@ class FastSearch:
                 mols = mols[:self.maximum_search_results]
             return mols
         except Exception as detail:
-            print "FAIL Fastsearch for %s" % (self.lig_path)
-            print detail
+            print("FAIL Fastsearch for %s" % (self.lig_path))
+            print(detail)
         finally:
             os.remove(ofn)
 
@@ -157,13 +161,95 @@ class BioLipReferencedSpearmanR:
             os.remove(sdf1)
             os.remove(sdf2)
 
+    def calculateAgainstOneSystem(self, ref_lig_path, ref_prt_path):
+        """apply the XCMS calculation between identical systems
+        Keyword Arguments:
+        ref_lig_path -- file path, string
+        ref_prt_path -- file path, string
+        """
+        # build native pocket, write to file
+        ref_apoc_input = ApocInput(ref_lig_path, ref_prt_path, threshold=7.0)
+        ref_pkt_path = tempfile.mkstemp()[1]
+        with open(ref_pkt_path, 'w') as ofs:
+            ofs.write(ref_apoc_input.input4Apoc())
+
+        # align pockets
+        pkt_path = tempfile.mkstemp()[1]
+        with open(pkt_path, 'w') as ofs:
+            ofs.write(self.apoc_input)
+        cmd = "apoc -plen 1 %s %s" % (pkt_path, ref_pkt_path)
+        args = shlex.split(cmd)
+        apoc_result = subprocess32.check_output(args)
+        apoc_parser = ApocResultParer(apoc_result)
+
+        if apoc_parser.numPocketSections() == 1:
+            pocket_alignment = apoc_parser.queryPocket()
+            global_alignment = apoc_parser.queryGlobal()
+            self_res = pocket_alignment.template_res
+            ref_res = pocket_alignment.query_res
+
+            pc1, pc2 = self.alignProteins(
+                self.pkt, self_res, ref_apoc_input.pocketSection(), ref_res)
+            suffix = ref_lig_path.split('.')[-1]
+            native_lig = pybel.readfile(suffix, ref_lig_path).next()
+            kcombu, lc1, lc2 = self.alignLigands(self.lig, native_lig)
+            query_lig_atn, template_lig_atn = kcombu.getMatchingSerialNums()
+
+            assert len(pc1) == len(pc2)
+            non_euqal_cnts = 0
+            for idx in range(len(pc1)):
+                c1, c2 = pc1[idx], pc2[idx]
+                if distance.euclidean(c1, c2) > 0.01:
+                    non_euqal_cnts += 1
+
+            try:
+                assert non_euqal_cnts < 1
+            except AssertionError:
+                print(
+                    "pockets' binding residues not same for identical systems")
+                print("total residues %d, non equals %d" %
+                      (len(pc1), non_euqal_cnts))
+                if non_euqal_cnts > 2:
+                    raise AssertionError, "more than two pockets' binding residues not same for identical systems"
+
+            vec1 = contactVector(lc1, pc1)
+            vec2 = contactVector(lc2, pc2)
+            tc = kcombu.getTc()
+            rho, pval = spearmanr(vec1, vec2)
+
+            my_result = {
+                "Tc": tc,
+                "spearmanr": rho,
+                "ps_score_pval": pocket_alignment.p_value,
+                "num_binding_res": len(ref_res),
+                "num_lig_atoms": len(lc1),
+                "pval": pval,
+                "ps_score": pocket_alignment.ps_score,
+                "tc_times_ps": tc * pocket_alignment.ps_score,
+                "TM-score": global_alignment.tm_score,
+                "rmsd": global_alignment.rmsd,
+                "seq_identity": global_alignment.seq_identity,
+                "query_res": pocket_alignment.query_res,
+                "query_lig_atom_num": query_lig_atn,
+                "template_lig_atom_num": template_lig_atn,
+                "template_res": pocket_alignment.template_res,
+            }
+
+        # free the resources
+        os.remove(pkt_path)
+        os.remove(ref_pkt_path)
+
+        return my_result
+
     def calculate(self,
                   maximum_search_results=100,
                   tani=0.5,
                   max_tani=1.0,
                   minimum_size=6):
-        self.pkt_path = tempfile.mkstemp()[1]
-        with open(self.pkt_path, 'w') as ofs:
+        """query multiple templates and compare against each one
+        """
+        pkt_path = tempfile.mkstemp()[1]
+        with open(pkt_path, 'w') as ofs:
             ofs.write(self.apoc_input)
 
         ref_pkt_path = tempfile.mkstemp()[1]
@@ -185,7 +271,7 @@ class BioLipReferencedSpearmanR:
                     with open(ref_pkt_path, 'w') as ofs:
                         ofs.write(ref_apoc_input)
 
-                    cmd = "apoc -plen 1 %s %s" % (self.pkt_path, ref_pkt_path)
+                    cmd = "apoc -plen 1 %s %s" % (pkt_path, ref_pkt_path)
                     args = shlex.split(cmd)
                     apoc_result = subprocess32.check_output(args)
                     apoc_parser = ApocResultParer(apoc_result)
@@ -226,21 +312,21 @@ class BioLipReferencedSpearmanR:
 
                         results[ref_lig.title] = my_result
                 except Exception as detail:
-                    print detail
+                    print(detail)
 
         results = sorted(results.items(), key=lambda d: d[1].get('pval', 1))
 
-        os.remove(self.pkt_path)
+        os.remove(pkt_path)
         os.remove(ref_pkt_path)
 
         return results
 
 
 class FixedPocketBioLipReferencedSpearmanR(BioLipReferencedSpearmanR):
-    def __init__(self, lig_path, prt_path, native_lig_path):
+    def __init__(self, lig_path, prt_path, ref_lig_path):
         self.lig_path = lig_path
         self.prt_path = prt_path
-        apoc_input = ApocInput(native_lig_path, self.prt_path, threshold=7.0)
+        apoc_input = ApocInput(ref_lig_path, self.prt_path, threshold=7.0)
         self.apoc_input = apoc_input.input4Apoc()
         self.pkt = apoc_input.pocketSection()
         suffix = lig_path.split('.')[-1]
