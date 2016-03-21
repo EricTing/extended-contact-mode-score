@@ -68,12 +68,12 @@ class SuperPose(VinaResultAccuracy):
         result = json.loads(QueryVinaResultOnBioLipFixedPocket(
             self.lig_pdb).output().open('r').read())
         dset = read2Df(result, self.lig_pdb)
-        dset = similarPocketsLigands(clean(dset), minimum_Tc=0.4)
+        dset = similarPocketsLigands(clean(dset), minimum_Tc=0.2)
         work_dir = os.path.join(self.workdir(), 'superpose')
         try:
             os.makedirs(work_dir)
-        except Exception as detail:
-            print(detail)
+        except Exception:
+            pass
 
         mob_pdb = self.append_ligand()
         for template_pdb in dset.index:
@@ -102,9 +102,20 @@ def test():
 def main():
     """launch the job
     """
-    pass
+    luigi.build(
+        [
+            SuperPose('2yiw_YIW_A_1.pdb'),  # high global similarity
+            SuperPose('1d1q_4NP_A_1.pdb'),  # low global similarity
+            SuperPose('1d5j_MM3_B_1.pdb'),  # low global similarity
+            SuperPose('1o8b_ABF_A_1.pdb'),  # low global similarity
+            SuperPose('2ag0_TPP_A_1.pdb'),  # low global similarity
+            # SuperPose('1a69_FMB_C_1.pdb'),  # low global similarity
+            # SuperPose('187l_PXY_A_1.pdb'),  # low global similarity
+            # SuperPose('3tzz_XPM_B_1.pdb'),  # low global similarity
+            # SuperPose('3a2q_ACA_A_1.pdb'),  # low global similarity
+        ],
+        local_scheduler=True)
 
 
 if __name__ == '__main__':
-    # main()
-    test()
+    main()
