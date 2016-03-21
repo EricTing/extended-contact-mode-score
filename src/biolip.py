@@ -323,6 +323,9 @@ class BioLipReferencedSpearmanR:
 
 
 class FixedPocketBioLipReferencedSpearmanR(BioLipReferencedSpearmanR):
+    """
+    Use the native binding pocket to determine the binding residues in the template complex
+    """
     def __init__(self, lig_path, prt_path, ref_lig_path):
         self.lig_path = lig_path
         self.prt_path = prt_path
