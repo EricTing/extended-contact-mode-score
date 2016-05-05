@@ -359,6 +359,9 @@ def main():
     plt.savefig("/work/jaydy/working/xcms_plot/rnd_pred_hist_xcms.tiff",
                 dpi=200)
 
+    print(rnd_spearmanr.spearmanr.describe())
+    print(fixed_spearmanr.spearmanr.describe())
+
     plt.figure()
     plt.hist([rnd_rmsd.rmsd, predicted_rmsd.rmsd],
              30,
@@ -369,6 +372,8 @@ def main():
     plt.legend(loc='best')
     plt.savefig("/work/jaydy/working/xcms_plot/rnd_pred_hist_rmsd.tiff",
                 dpi=200)
+    print(rnd_rmsd.rmsd.describe())
+    print(predicted_rmsd.rmsd.describe())
 
     plt.figure()
     plt.hist([rnd_rmsd.cms, predicted_rmsd.cms],
@@ -381,6 +386,8 @@ def main():
     plt.legend(loc='best')
     plt.savefig("/work/jaydy/working/xcms_plot/rnd_pred_hist_cms.tiff",
                 dpi=200)
+    print(rnd_rmsd.cms.describe())
+    print(predicted_rmsd.cms.describe())
 
 
 if __name__ == '__main__':
