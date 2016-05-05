@@ -6,18 +6,18 @@ from __future__ import print_function
 import re
 import pandas as pd
 import numpy as np
-import seaborn as sns
 import analysis as readme
 
 import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from pprint import pprint
 from analysis import analysis, loadData, clean
 
 sns.set_style("white", {'ytick.major.size': 10.0})
-sns.set_context("poster", font_scale=1.1)
-matplotlib.rcParams.update({'font.size': 18, 'font.family': 'serif'})
+sns.set_context("poster", font_scale=1.2)
+matplotlib.rcParams.update({'font.size': 24, 'font.family': 'serif'})
 
 
 def main():
@@ -49,8 +49,8 @@ def main():
                 square=True,
                 xticklabels=map(normalizeRanges, data.index[::-1]),
                 yticklabels=map(normalizeRanges, data.columns[::-1]))
-    plt.xlabel("Pocket similarity")
-    plt.ylabel("Ligand similarity")
+    plt.xlabel("Pocket similarity", fontsize=24)
+    plt.ylabel("Ligand similarity", fontsize=24)
     plt.tight_layout()
     plt.savefig("/work/jaydy/working/xcms_plot/p_val.tiff", dpi=200)
 
@@ -65,8 +65,8 @@ def main():
                 yticklabels=map(normalizeRanges, data.columns[::-1]),
                 vmin=-1,
                 vmax=1)
-    plt.xlabel("Pocket similarity")
-    plt.ylabel("Ligand similarity")
+    plt.xlabel("Pocket similarity", fontsize=24)
+    plt.ylabel("Ligand similarity", fontsize=24)
     plt.tight_layout()
     plt.savefig("/work/jaydy/working/xcms_plot/native_xcms.tiff", dpi=200)
 
@@ -75,12 +75,12 @@ def main():
     data = df.groupby([pd.cut(df['Tc'], 20), pd.cut(df['ps_score'], 20)])[
         'spearmanr'].mean().unstack()
     data = data.reindex(index=data.index[::-1])
-    sns.heatmap(data,
-                square=True,
-                xticklabels=map(normalizeRanges, data.index[::-1]),
-                yticklabels=map(normalizeRanges, data.columns[::-1]),
-                vmin=-1,
-                vmax=1)
+    ax = sns.heatmap(data,
+                     square=True,
+                     xticklabels=map(normalizeRanges, data.index[::-1]),
+                     yticklabels=map(normalizeRanges, data.columns[::-1]),
+                     vmin=-1,
+                     vmax=1)
     plt.xlabel("Pocket similarity")
     plt.ylabel("Ligand similarity")
     plt.tight_layout()
@@ -91,12 +91,12 @@ def main():
     data = df.groupby([pd.cut(df['Tc'], 20), pd.cut(df['ps_score'], 20)])[
         'spearmanr'].mean().unstack()
     data = data.reindex(index=data.index[::-1])
-    sns.heatmap(data,
-                square=True,
-                xticklabels=map(normalizeRanges, data.index[::-1]),
-                yticklabels=map(normalizeRanges, data.columns[::-1]),
-                vmin=-1,
-                vmax=1)
+    ax = sns.heatmap(data,
+                     square=True,
+                     xticklabels=map(normalizeRanges, data.index[::-1]),
+                     yticklabels=map(normalizeRanges, data.columns[::-1]),
+                     vmin=-1,
+                     vmax=1)
     plt.xlabel("Pocket similarity")
     plt.ylabel("Ligand similarity")
     plt.tight_layout()
@@ -168,12 +168,17 @@ def main():
     plt.xlabel("XCMS")
     plt.savefig("/work/jaydy/working/xcms_plot/random_xcms_hist.tiff", dpi=200)
 
-    plt.figure()
-    fixed_spearmanr.plot(kind="scatter",
-                         x='cms',
-                         y='rmsd',
-                         color='k',
-                         alpha=0.3)
+    fig = plt.figure(figsize=(7, 6))
+    # fixed_spearmanr.plot(kind="scatter",
+    #                      x='cms',
+    #                      y='rmsd',
+    #                      color='k',
+    #                      alpha=0.3)
+    ax = fig.add_subplot(1,1,1)
+    ax.scatter(fixed_spearmanr['cms'],
+                fixed_spearmanr['rmsd'],
+                alpha=0.3,
+                c='k')
 
     # z = np.polyfit(fixed_spearmanr.cms, fixed_spearmanr.rmsd, 3)
     # p = np.poly1d(z)
@@ -194,11 +199,12 @@ def main():
     # plt.plot(x, fitted_line, 'r--')
     # fixed_spearmanr[['cms', 'rmsd']].to_csv("/work/jaydy/working/cms_rmsd_scatter.csv")
 
-    plt.xlabel("CMS")
-    plt.ylabel("RMSD [$\AA$]")
-    plt.xlim((0, 1))
-    plt.ylim((0, 15))
-    plt.savefig("/work/jaydy/working/xcms_plot/cms_rmsd_scatter.tiff", dpi=200)
+    ax.set_xlabel("CMS", fontsize=24)
+    ax.set_ylabel("RMSD [$\AA$]", fontsize=24)
+    ax.set_xlim((0, 1))
+    ax.set_ylim((0, 15))
+    fig.tight_layout()
+    fig.savefig("/work/jaydy/working/xcms_plot/cms_rmsd_scatter.tiff", dpi=200)
 
     high_tm = fixed_spearmanr[fixed_spearmanr["TM-score"] > 0.5]
     low_tm = fixed_spearmanr[fixed_spearmanr["TM-score"] < 0.5]
@@ -298,14 +304,19 @@ def main():
     predicted_df = pd.merge(predicted_rmsd,
                             xcms_back_df[['query', 'spearmanr']])
 
-    plt.figure()
+    fig = plt.figure(figsize=(7, 6))
 
     sampled_predicted_df = predicted_df.sample(len(fixed_spearmanr))
-    sampled_predicted_df.plot(kind='scatter',
-                              x='cms',
-                              y='spearmanr',
-                              color='k',
-                              alpha=0.3)
+    # sampled_predicted_df.plot(kind='scatter',
+    #                           x='cms',
+    #                           y='spearmanr',
+    #                           color='k',
+    #                           alpha=0.3)
+    ax = fig.add_subplot(1,1,1)
+    ax.scatter(sampled_predicted_df['cms'],
+                sampled_predicted_df['spearmanr'],
+                c='k',
+                alpha=0.3)
 
     # cleaned_predicted_df = predicted_df.dropna()
 
@@ -329,19 +340,20 @@ def main():
 
     # cleaned_predicted_df[['cms', 'spearmanr']].to_csv("/work/jaydy/working/cms_xcms_scatter.csv")
 
-    plt.xlabel('CMS')
-    plt.ylabel("XCMS")
-    plt.xlim((0, 1))
-    plt.ylim((-1, 1))
-    plt.savefig("/work/jaydy/working/xcms_plot/cms_xcms_scatter.tiff", dpi=200)
+    ax.set_xlabel('CMS', fontsize=24)
+    ax.set_ylabel("XCMS", fontsize=24)
+    ax.set_xlim((0, 1))
+    ax.set_ylim((-1, 1))
+    fig.tight_layout()
+    fig.savefig("/work/jaydy/working/xcms_plot/cms_xcms_scatter.tiff", dpi=200)
 
     plt.figure()
     plt.hist([rnd_spearmanr.spearmanr, fixed_spearmanr.spearmanr],
              30,
              color=['lightgrey', 'dimgrey'],
-             label=['Random', 'AutoDock Vina Prediction'])
-    plt.xlabel('XCMS')
-    plt.ylabel('Number of complexes')
+             label=['Random', 'AutoDock Vina'])
+    plt.xlabel('XCMS', fontsize=24)
+    plt.ylabel('Number of complexes', fontsize=24)
     # plt.xlim((-1, 1))
     plt.legend(loc='best')
     plt.savefig("/work/jaydy/working/xcms_plot/rnd_pred_hist_xcms.tiff",
@@ -351,9 +363,9 @@ def main():
     plt.hist([rnd_rmsd.rmsd, predicted_rmsd.rmsd],
              30,
              color=['lightgrey', 'dimgrey'],
-             label=['Random', 'AutoDock Vina Prediction'])
-    plt.xlabel('RMSD [$\AA$]')
-    plt.ylabel('Number of complexes')
+             label=['Random', 'AutoDock Vina'])
+    plt.xlabel('RMSD [$\AA$]', fontsize=24)
+    plt.ylabel('Number of complexes', fontsize=24)
     plt.legend(loc='best')
     plt.savefig("/work/jaydy/working/xcms_plot/rnd_pred_hist_rmsd.tiff",
                 dpi=200)
@@ -362,9 +374,9 @@ def main():
     plt.hist([rnd_rmsd.cms, predicted_rmsd.cms],
              30,
              color=['lightgrey', 'dimgrey'],
-             label=['Random', 'AutoDock Vina Prediction'])
-    plt.xlabel('CMS')
-    plt.ylabel('Number of complexes')
+             label=['Random', 'AutoDock Vina'])
+    plt.xlabel('CMS', fontsize=24)
+    plt.ylabel('Number of complexes', fontsize=24)
     plt.xlim((0, 1))
     plt.legend(loc='best')
     plt.savefig("/work/jaydy/working/xcms_plot/rnd_pred_hist_cms.tiff",
