@@ -108,7 +108,7 @@ def main():
 
     plt.figure()
     predicted_rmsd.rmsd.hist(bins=30, color='darkgrey', alpha=0.9)
-    plt.xlabel("RMSD [$\AA$]")
+    plt.xlabel("RMSD [$\mathrm{\AA}$]")
     plt.savefig("/work/jaydy/working/xcms_plot/predict_rmsd_hist.tiff",
                 dpi=200)
 
@@ -123,7 +123,7 @@ def main():
 
     plt.figure()
     rnd_rmsd.rmsd.hist(bins=30, color='darkgrey', alpha=0.9)
-    plt.xlabel("RMSD [$\AA$]")
+    plt.xlabel("RMSD [$\mathrm{\AA}$]")
     plt.savefig("/work/jaydy/working/xcms_plot/random_rmsd_hist.tiff", dpi=200)
 
     plt.figure()
@@ -200,7 +200,7 @@ def main():
     # fixed_spearmanr[['cms', 'rmsd']].to_csv("/work/jaydy/working/cms_rmsd_scatter.csv")
 
     ax.set_xlabel("CMS", fontsize=24)
-    ax.set_ylabel("RMSD [$\AA$]", fontsize=24)
+    ax.set_ylabel("RMSD [$\mathrm{\AA}$]", fontsize=24)
     ax.set_xlim((0, 1))
     ax.set_ylim((0, 15))
     fig.tight_layout()
@@ -292,7 +292,7 @@ def main():
                        alpha=0.5)
     plt.xlim((0, 30))
     plt.ylim((-1, 1))
-    plt.xlabel("RMSD [$\AA$]")
+    plt.xlabel("RMSD [$\mathrm{\AA}$]")
     plt.ylabel("XCMS")
 
     xcms_back_df = pd.read_csv(
@@ -347,6 +347,33 @@ def main():
     fig.tight_layout()
     fig.savefig("/work/jaydy/working/xcms_plot/cms_xcms_scatter.tiff", dpi=200)
 
+    fig = plt.figure(figsize=(13.5, 6))
+    ax1 = fig.add_subplot(1,2,1)
+    ax1.scatter(fixed_spearmanr['cms'],
+                fixed_spearmanr['rmsd'],
+                alpha=0.3,
+                c='k')
+
+    ax1.set_xlabel("CMS", fontsize=24)
+    ax1.set_ylabel("RMSD [$\mathrm{\AA}$]", fontsize=24)
+    ax1.set_xlim((0, 1))
+    ax1.set_ylim((0, 15))
+    ax1.text(-0.22, 0.95, 'A', transform=ax1.transAxes, fontsize=30, style='normal')
+
+    ax2 = fig.add_subplot(1,2,2)
+    ax2.scatter(sampled_predicted_df['cms'],
+                sampled_predicted_df['spearmanr'],
+                c='k',
+                alpha=0.3)
+    ax2.set_xlabel('CMS', fontsize=24)
+    ax2.set_ylabel("XCMS", fontsize=24)
+    ax2.set_xlim((0, 1))
+    ax2.set_ylim((min(sampled_predicted_df['spearmanr']) - 0.1, 1))
+    ax2.text(-0.25, 0.95, 'B', transform=ax2.transAxes, fontsize=30, style='normal')
+
+    fig.tight_layout()
+    fig.savefig("/work/jaydy/working/xcms_plot/cms_rmsd_xcms_scatter.tiff", dpi=300)
+
     plt.figure()
     plt.hist([rnd_spearmanr.spearmanr, fixed_spearmanr.spearmanr],
              30,
@@ -367,7 +394,7 @@ def main():
              30,
              color=['lightgrey', 'dimgrey'],
              label=['Random', 'AutoDock Vina'])
-    plt.xlabel('RMSD [$\AA$]', fontsize=24)
+    plt.xlabel('RMSD [$\mathrm{\AA}$]', fontsize=24)
     plt.ylabel('Number of complexes', fontsize=24)
     plt.legend(loc='best')
     plt.savefig("/work/jaydy/working/xcms_plot/rnd_pred_hist_rmsd.tiff",
