@@ -10,6 +10,7 @@ import analysis as readme
 
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import seaborn as sns
 
 from pprint import pprint
@@ -137,9 +138,7 @@ def main():
     rnd_df = readme.similarPocketsLigands(rnd_df)
 
     fixed_df.groupby("query").apply(lambda g: g.shape[0]).hist(
-        bins=30,
-        color='darkgrey',
-        alpha=0.9)
+        bins=30, color='darkgrey', alpha=0.9)
 
     fiexed_xcms = fixed_df[["query", "spearmanr", "pval", "tc_times_ps",
                             "TM-score", "template"]]
@@ -174,11 +173,11 @@ def main():
     #                      y='rmsd',
     #                      color='k',
     #                      alpha=0.3)
-    ax = fig.add_subplot(1,1,1)
+    ax = fig.add_subplot(1, 1, 1)
     ax.scatter(fixed_spearmanr['cms'],
-                fixed_spearmanr['rmsd'],
-                alpha=0.3,
-                c='k')
+               fixed_spearmanr['rmsd'],
+               alpha=0.3,
+               c='k')
 
     # z = np.polyfit(fixed_spearmanr.cms, fixed_spearmanr.rmsd, 3)
     # p = np.poly1d(z)
@@ -312,11 +311,11 @@ def main():
     #                           y='spearmanr',
     #                           color='k',
     #                           alpha=0.3)
-    ax = fig.add_subplot(1,1,1)
+    ax = fig.add_subplot(1, 1, 1)
     ax.scatter(sampled_predicted_df['cms'],
-                sampled_predicted_df['spearmanr'],
-                c='k',
-                alpha=0.3)
+               sampled_predicted_df['spearmanr'],
+               c='k',
+               alpha=0.3)
 
     # cleaned_predicted_df = predicted_df.dropna()
 
@@ -348,7 +347,7 @@ def main():
     fig.savefig("/work/jaydy/working/xcms_plot/cms_xcms_scatter.tiff", dpi=200)
 
     fig = plt.figure(figsize=(13.5, 6))
-    ax1 = fig.add_subplot(1,2,1)
+    ax1 = fig.add_subplot(1, 2, 1)
     ax1.scatter(fixed_spearmanr['cms'],
                 fixed_spearmanr['rmsd'],
                 alpha=0.3,
@@ -358,9 +357,14 @@ def main():
     ax1.set_ylabel("RMSD [$\mathrm{\AA}$]", fontsize=24)
     ax1.set_xlim((0, 1))
     ax1.set_ylim((0, 15))
-    ax1.text(-0.22, 0.95, 'A', transform=ax1.transAxes, fontsize=30, style='normal')
+    ax1.text(-0.22,
+             0.95,
+             'A',
+             transform=ax1.transAxes,
+             fontsize=30,
+             style='normal')
 
-    ax2 = fig.add_subplot(1,2,2)
+    ax2 = fig.add_subplot(1, 2, 2)
     ax2.scatter(sampled_predicted_df['cms'],
                 sampled_predicted_df['spearmanr'],
                 c='k',
@@ -369,10 +373,16 @@ def main():
     ax2.set_ylabel("XCMS", fontsize=24)
     ax2.set_xlim((0, 1))
     ax2.set_ylim((min(sampled_predicted_df['spearmanr']) - 0.1, 1))
-    ax2.text(-0.25, 0.95, 'B', transform=ax2.transAxes, fontsize=30, style='normal')
+    ax2.text(-0.25,
+             0.95,
+             'B',
+             transform=ax2.transAxes,
+             fontsize=30,
+             style='normal')
 
     fig.tight_layout()
-    fig.savefig("/work/jaydy/working/xcms_plot/cms_rmsd_xcms_scatter.tiff", dpi=300)
+    fig.savefig("/work/jaydy/working/xcms_plot/cms_rmsd_xcms_scatter.tiff",
+                dpi=300)
 
     plt.figure()
     plt.hist([rnd_spearmanr.spearmanr, fixed_spearmanr.spearmanr],
@@ -415,6 +425,83 @@ def main():
                 dpi=200)
     print(rnd_rmsd.cms.describe())
     print(predicted_rmsd.cms.describe())
+
+    fig = plt.figure(figsize=(12, 6))
+
+    ax = fig.add_subplot(1, 3, 1)
+    violin_parts = ax.violinplot(
+        [predicted_rmsd['rmsd'], rnd_rmsd['rmsd']],
+        showextrema=False,
+        showmedians=True,
+        showmeans=False)
+    colors = ['black', 'grey']
+    for patch, color in zip(violin_parts['bodies'], colors):
+        patch.set_color(color)
+    plt.setp(ax, xticks=[1, 2], xticklabels=['', ''])
+    ax.yaxis.grid(True)
+    ax.set_ylabel('RMSD [$\mathrm{\AA}$]', fontsize=24)
+
+    ax.text(-0.5,
+            0.95,
+            'A',
+            transform=ax.transAxes,
+            fontsize=30,
+            style='normal')
+
+    ax = fig.add_subplot(1, 3, 2)
+    violin_parts = ax.violinplot(
+        [predicted_rmsd['cms'], rnd_rmsd['cms']],
+        showextrema=False,
+        showmedians=True,
+        showmeans=False)
+    colors = ['black', 'grey']
+    for patch, color in zip(violin_parts['bodies'], colors):
+        patch.set_color(color)
+    plt.setp(ax, xticks=[1, 2], xticklabels=['', ''])
+    ax.yaxis.grid(True)
+    ax.set_ylabel('CMS', fontsize=24)
+
+    fake_handles = [mpatches.Patch(color='dimgrey'),
+                    mpatches.Patch(color='lightgrey')]
+    ax.legend(fake_handles, ['AutoDock Vina', 'Random'],
+              loc='center',
+              frameon=False,
+              fontsize='small',
+              bbox_to_anchor=(0.5, -0.05),
+              ncol=2
+    )
+
+    ax.text(-0.5,
+            0.95,
+            'B',
+            transform=ax.transAxes,
+            fontsize=30,
+            style='normal')
+
+    ax = fig.add_subplot(1, 3, 3)
+    violin_parts = ax.violinplot(
+        [fixed_spearmanr.spearmanr, rnd_spearmanr.spearmanr],
+        showextrema=False,
+        showmedians=True,
+        showmeans=False)
+    colors = ['black', 'grey']
+    for patch, color in zip(violin_parts['bodies'], colors):
+        patch.set_color(color)
+    plt.setp(ax, xticks=[1, 2], xticklabels=['', ''])
+    ax.yaxis.grid(True)
+    ax.set_ylabel('XCMS', fontsize=24)
+
+
+    ax.text(-0.5,
+            0.95,
+            'C',
+            transform=ax.transAxes,
+            fontsize=30,
+            style='normal')
+
+    fig.tight_layout()
+
+    fig.savefig("/work/jaydy/working/xcms_plot/violin.tiff", dpi=300)
 
 
 if __name__ == '__main__':
