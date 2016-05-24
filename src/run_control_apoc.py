@@ -6,7 +6,7 @@ import os
 import re
 import urllib
 from Bio.PDB import PDBParser
-from urls import LPC_DIR, APOC_WORKING_DIR, APOC_BIN, PREPARE_MOL2_BIN
+from myurls import LPC_DIR, APOC_WORKING_DIR, APOC_BIN, PREPARE_MOL2_BIN
 from apoc_inputs import LigandExpStructureInPdb
 
 

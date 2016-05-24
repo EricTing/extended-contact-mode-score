@@ -6,7 +6,7 @@ import os
 import subprocess32
 
 from run_control_apoc import PdbMol2, PkcombuAtomMatchParser
-from urls import WORKING_DIR
+from myurls import WORKING_DIR
 import glob
 
 # 5 fails from 200 in astex

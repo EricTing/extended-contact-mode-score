@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN
 from itertools import groupby
 
 import run_control_apoc
-from urls import WORKING_DIR
+from myurls import WORKING_DIR
 from collect_xcms import AtomicXcmsTable
 
 

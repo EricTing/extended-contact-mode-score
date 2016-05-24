@@ -5,7 +5,7 @@ import pickle
 import json
 import os
 import pandas as pd
-from urls import WORKING_DIR
+from myurls import WORKING_DIR
 from xcms import LpcApocXcms
 from apoc_inputs import ApocListPathTask
 from run_control_apoc import LpcApocResultTask, ApocResultParer

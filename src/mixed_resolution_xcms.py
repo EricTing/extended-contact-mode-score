@@ -11,7 +11,7 @@ from run_control_apoc import LigandMatchingList
 from run_control_apoc import ProteinMatchingList
 from run_control_apoc import LpcKcombuResult, LpcApocResultTask
 from run_control_apoc import PkcombuAtomMatchParser, ApocResultParer
-from urls import APOC_WORKING_DIR
+from myurls import APOC_WORKING_DIR
 
 
 class MixedResolutionXcms(luigi.Task):

@@ -8,7 +8,7 @@ import os
 from scipy.spatial.distance import euclidean
 from Bio.PDB import PDBParser
 
-from urls import APOC_WORKING_DIR
+from myurls import APOC_WORKING_DIR
 from apoc_inputs import DecompressedPdb
 from run_control_apoc import ApocResultParer, LpcPocketPathTask
 from run_control_apoc import LpcKcombuResult, LpcApocResultTask
