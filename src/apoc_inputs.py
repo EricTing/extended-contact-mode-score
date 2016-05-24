@@ -6,15 +6,16 @@ import os
 import urllib
 import pybel
 
-from urls import WORKING_DIR, DAT_DIR, APOC_WORKING_DIR
+from myurls import WORKING_DIR, DAT_DIR, APOC_WORKING_DIR
 from scipy.spatial.distance import euclidean
 
 
 class ApocInput:
-    def __init__(self, lig_path, prt_path, threshold=7.0):
+    def __init__(self, lig_path, prt_path, threshold=7.0, title=""):
         self.lig_path = lig_path
         self.prt_path = prt_path
         self.threshold = threshold
+        self.title = title
 
     def __cleanedPdb(self):
         with open(self.prt_path, 'r') as ifs:
@@ -50,8 +51,12 @@ class ApocInput:
                 res_num = int(line[22:26])
                 residues.add(res_num)
 
-        start_pkt_line = "\nPKT %d 1000 %s\n" % (len(residues),
-                                                 lig.title.split('/')[-1])
+        if self.title == "":
+            start_pkt_line = "\nPKT %d 1000 %s\n" % (len(residues),
+                                                    lig.title.split('/')[-1])
+        else:
+            start_pkt_line = "\nPKT %d 1000 %s\n" % (len(residues),
+                                                     self.title)
 
         return start_pkt_line + "\n".join(pkt_lines) + "\nTER\n"
 

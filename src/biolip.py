@@ -79,10 +79,13 @@ class BioLipQuery(FastSearch):
 
 
 class BioLipReferencedSpearmanR:
-    def __init__(self, lig_path, prt_path):
+    def __init__(self, lig_path, prt_path, title=""):
         self.lig_path = lig_path
         self.prt_path = prt_path
-        apoc_input = ApocInput(self.lig_path, self.prt_path, threshold=7.0)
+        apoc_input = ApocInput(self.lig_path,
+                               self.prt_path,
+                               threshold=7.0,
+                               title=title)
         self.apoc_input = apoc_input.input4Apoc()
         self.pkt = apoc_input.pocketSection()
         suffix = lig_path.split('.')[-1]
