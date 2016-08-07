@@ -219,8 +219,11 @@ CLOSED: [2016-05-05 Thu 16:21]
    | 1o8b_ABF_A_1.pdb | 3bxh_F6P_A_1.pdb |  0.756368 | 1.581726 |  0.26849 | 0.774737 |   5.3.1.6 | N/A         |
    | 2yiw_YIW_A_1.pdb | 3f3u_1AW_A_1.pdb |   0.96104 | 0.420666 |  0.75643 | 0.937001 | 2.7.11.24 | 2.7.10.2    |
 
-* TODO CMS v.s. RMSD [3/4]
-DEADLINE: <2016-08-07 Sun>
+* DONE CMS v.s. RMSD [5/5]
+CLOSED: [2016-08-07 Sun 14:06] DEADLINE: <2016-08-07 Sun>
+:LOGBOOK:
+CLOCK: [2016-08-07 Sun 13:38]--[2016-08-07 Sun 13:49] =>  0:11
+:END:
 ** DONE Generate the random rotational and translational vectors
 CLOSED: [2016-08-06 Sat 23:09]
 #+BEGIN_SRC python
@@ -334,5 +337,47 @@ CLOSED: [2016-08-07 Sun 12:30]
      # max      1.000000    0.978876    0.978876    0.958193    0.958193
    #+END_SRC
 
-** TODO Merge with the ligand size
-DEADLINE: <2016-08-07 Sun>
+** DONE Merge with the ligand size
+CLOSED: [2016-08-07 Sun 13:49] DEADLINE: <2016-08-07 Sun>
+1. merge with ./dat/first_step_rmsd_cms.csv
+
+** DONE Quartile coefficient of dispersion
+CLOSED: [2016-08-07 Sun 14:06]
+1. 
+  #+BEGIN_SRC python
+    import pandas as pd
+    import numpy as np
+
+    cms_df = pd.read_csv("./dat/cms.txt.csv", index_col=0)
+    rmsd_df = pd.read_csv("./dat/rmsd.txt.csv", index_col=0)
+
+
+    def QuantileCoef(dat):
+        """
+        Keyword Arguments:
+        dat -- dis(similarity) values
+        """
+        q1, q3 = np.percentile(dat, [25, 75])
+        return (q3 - q1) / (q3 + q1)
+
+
+    cms_qe = {}
+    for name in cms_df.columns[1:]:
+        cms_qe[name] = QuantileCoef(cms_df[name])
+
+    rmsd_qe = {}
+    for name in rmsd_df.columns[1:]:
+        rmsd_qe[name] = QuantileCoef(rmsd_df[name])
+  #+END_SRC
+2. cms_qe
+   | 0 | 0.028852966805196625, |
+   | 1 | 0.064695226872003908, |
+   | 2 | 0.098503633370683158, |
+   | 3 | 0.13586522890578778,  |
+   | 4 | 0.17329037624717311   |
+3. rmsd_qe
+   | 0 | 0.26880158781410668, |
+   | 1 | 0.27928463951522015, |
+   | 2 | 0.27137804188055592, |
+   | 3 | 0.2765744229551253,  |
+   | 4 | 0.27678718835440796  |
