@@ -219,68 +219,35 @@ CLOSED: [2016-05-05 Thu 16:21]
    | 1o8b_ABF_A_1.pdb | 3bxh_F6P_A_1.pdb |  0.756368 | 1.581726 |  0.26849 | 0.774737 |   5.3.1.6 | N/A         |
    | 2yiw_YIW_A_1.pdb | 3f3u_1AW_A_1.pdb |   0.96104 | 0.420666 |  0.75643 | 0.937001 | 2.7.11.24 | 2.7.10.2    |
 
-* DONE CMS v.s. RMSD [5/5]
-CLOSED: [2016-08-07 Sun 14:06] DEADLINE: <2016-08-07 Sun>
+* DONE CMS v.s. RMSD [3/3]
+CLOSED: [2016-08-07 Sun 23:06] DEADLINE: <2016-08-07 Sun>
 :LOGBOOK:
+CLOCK: [2016-08-07 Sun 22:59]--[2016-08-07 Sun 23:06] =>  0:07
+CLOCK: [2016-08-07 Sun 17:25]--[2016-08-07 Sun 17:50] =>  0:25
 CLOCK: [2016-08-07 Sun 13:38]--[2016-08-07 Sun 13:49] =>  0:11
 :END:
-** DONE Generate the random rotational and translational vectors
-CLOSED: [2016-08-06 Sat 23:09]
-#+BEGIN_SRC python
-  import numpy as np
-
-  cols = "LigIdx PrtIdx v1 v2 v3 v4 v5 v6"
-  num_perturbations = 5
-  tra = 0.02
-  rot = 0.0872
-
-  print("\n")
-  print(cols)
-  for ceil in range(0, num_perturbations):
-      tra_vec = np.random.uniform(tra * ceil, tra * ceil + tra, 3)
-      rot_vec = np.random.uniform(rot * ceil, rot * ceil + rot, 3)
-      print("0 0 " + " ".join(map(str, tra_vec)) + " " + " ".join(map(str, rot_vec)))
-
-  # LigIdx PrtIdx v1 v2 v3 v4 v5 v6
-  # 0 0 0.00713966044132 0.00353488708881 0.0105212079788 0.0555295416415 0.0271832392143 0.0764311356846
-  # 0 0 0.0340054951833 0.0315664607223 0.0279540541451 0.119685479375 0.144584987688 0.162987703179
-  # 0 0 0.0532867621045 0.0419465588823 0.0551053833282 0.254236197884 0.187921882752 0.206874355576
-  # 0 0 0.0692900901377 0.0672283937846 0.0600191926154 0.301733088118 0.297673628981 0.340123842925
-  # 0 0 0.0930654108728 0.0964934910853 0.0999380613226 0.424451231222 0.370270162575 0.379073151311
-#+END_SRC
-
-** DONE Generate conformations [3/3]
-CLOSED: [2016-08-07 Sun 01:12] SCHEDULED: <2016-08-06 Sat>
-1. [X] ./src/trace.bash
-2. [X] /home/jaydy/Workspace/GitHub/geaxdock_gpu/data/trajectory.sample.out
-3. [X] /work/jaydy/working/astex/rnd_confs
+** DONE Generate conformations [4/4]
+CLOSED: [2016-08-07 Sun 17:26] SCHEDULED: <2016-08-06 Sat>
+1. [X] ./src/gen_vec.py
+2. [X] ./src/trace.bash
+3. [X] /home/jaydy/Workspace/GitHub/geaxdock_gpu/data/trajectory.sample.out
+4. [X] /work/jaydy/working/astex/rnd_confs
 
 ** DONE Calculate CMS and RMSD [3/3]
-CLOSED: [2016-08-07 Sun 12:31] DEADLINE: <2016-08-07 Sun> SCHEDULED: <2016-08-06 Sat>
+CLOSED: [2016-08-07 Sun 23:06] DEADLINE: <2016-08-07 Sun> SCHEDULED: <2016-08-06 Sat>
 :LOGBOOK:
+CLOCK: [2016-08-07 Sun 18:41]--[2016-08-07 Sun 19:10] =>  0:29
 CLOCK: [2016-08-07 Sun 12:20]--[2016-08-07 Sun 12:31] =>  0:11
 CLOCK: [2016-08-07 Sun 01:12]--[2016-08-07 Sun 01:52] =>  0:40
 CLOCK: [2016-08-06 Sat 22:41]--[2016-08-06 Sat 23:15] =>  0:34
 :END:
-1. ./src/cms_rmsd.bash
 
-*** DONE Timing RMSD calculation on 204 * 5 conformations
-CLOSED: [2016-08-07 Sun 01:19]
-| real | 0m13.524s |
-| user | 0m1.364s  |
-| sys  | 0m2.594s  |
-
-*** DONE Timing CMS calculation on 204 * 5 conformations
-CLOSED: [2016-08-07 Sun 12:14]
-| real | 54m26.896s |
-| user | 54m2.090s  |
-| sys  | 0m12.092s  |
-
-*** DONE Results of five perturbations [3/3]
-CLOSED: [2016-08-07 Sun 12:30]
-1. [X] /work/jaydy/working/astex/rmsd.txt
-2. [X] /work/jaydy/working/astex/cms.txt
-3. [X] collect and check
+*** DONE Results of five perturbations [4/4]
+CLOSED: [2016-08-07 Sun 23:03]
+1. [X] ./src/cms_rmsd.bash
+2. [X] /work/jaydy/working/astex/rmsd.txt
+3. [X] /work/jaydy/working/astex/cms.txt
+4. [X] collect and merge ligand size
    #+BEGIN_SRC python
      from collections import defaultdict
      import pandas as pd
@@ -292,12 +259,16 @@ CLOSED: [2016-08-07 Sun 12:30]
          for idx, line in enumerate(lines):
              if line.startswith('complex'):
                  name = line.split()[1]
-                 next_ten_lines = lines[idx + 1:idx + 11]
-                 for l in next_ten_lines:
+                 next_16lines = lines[idx + 1:idx + 1 + 16]
+                 for l in next_16lines:
                      if 'value' in l:
                          rmsd_dat[name].append(float(l.split()[-1]))
 
          rmsd_df = pd.DataFrame(rmsd_dat).T
+         # merge ligand size ./dat/first_step_rmsd_cms.csv
+         sz_df = pd.read_csv('./dat/first_step_rmsd_cms.csv', index_col=0)
+         sz_df = sz_df.set_index('ligand')[['sz']]
+         rmsd_df = rmsd_df.join(sz_df)
          rmsd_df.to_csv(ofn)
 
 
@@ -311,39 +282,23 @@ CLOSED: [2016-08-07 Sun 12:30]
 
      rmsd_df = pd.read_csv(rmsd_ofn, index_col=0)
      cms_df = pd.read_csv(cms_ofn, index_col=0)
-
-     # rmsd_df.describe()
-
-     #                 0           1           2           3           4
-     # count  204.000000  204.000000  204.000000  204.000000  204.000000
-     # mean     0.298716    0.744411    1.108407    1.558302    1.904206
-     # std      0.115058    0.291097    0.434273    0.611119    0.746264
-     # min      0.092427    0.261221    0.385357    0.549472    0.683478
-     # 25%      0.208057    0.518140    0.773798    1.084827    1.316361
-     # 50%      0.285197    0.689501    1.046827    1.467299    1.816545
-     # 75%      0.361028    0.919709    1.350206    1.914312    2.323952
-     # max      0.681390    1.710334    2.465456    3.570280    4.311602
-
-     # cms_df.describe()
-
-     #                 0           1           2           3           4
-     # count  204.000000  204.000000  204.000000  204.000000  204.000000
-     # mean     0.926242    0.819258    0.738301    0.657808    0.599432
-     # std      0.040436    0.086200    0.108296    0.128840    0.138458
-     # min      0.790104    0.563740    0.451082    0.327675    0.257256
-     # 25%      0.903579    0.770565    0.670595    0.571708    0.495431
-     # 50%      0.932248    0.829189    0.749450    0.667102    0.601007
-     # 75%      0.957270    0.877165    0.817142    0.751484    0.703130
-     # max      1.000000    0.978876    0.978876    0.958193    0.958193
    #+END_SRC
 
-** DONE Merge with the ligand size
-CLOSED: [2016-08-07 Sun 13:49] DEADLINE: <2016-08-07 Sun>
-1. merge with ./dat/first_step_rmsd_cms.csv
+*** DONE Timing RMSD calculation on 204 * 8 conformations
+CLOSED: [2016-08-07 Sun 22:59]
+| real | 0m8.364s |
+| user | 0m2.011s |
+| sys  | 0m3.298s |
 
-** DONE Quartile coefficient of dispersion
-CLOSED: [2016-08-07 Sun 14:06]
-1. 
+*** DONE Timing CMS calculation on 204 * 8 conformations
+CLOSED: [2016-08-07 Sun 22:59]
+| real | 87m11.291s |
+| user | 86m49.554s |
+| sys  | 0m14.283s  |
+
+** DONE Quartile coefficient of dispersion [3/3]
+CLOSED: [2016-08-07 Sun 23:06]
+1. [X] calculate
   #+BEGIN_SRC python
     import pandas as pd
     import numpy as np
@@ -362,26 +317,42 @@ CLOSED: [2016-08-07 Sun 14:06]
 
 
     cms_qe = {}
-    for name in cms_df.columns[1:]:
+    for name in cms_df.columns:
         cms_qe[name] = QuantileCoef(cms_df[name])
 
     rmsd_qe = {}
-    for name in rmsd_df.columns[1:]:
+    for name in rmsd_df.columns:
         rmsd_qe[name] = QuantileCoef(rmsd_df[name])
+
+    print("step QuantileCoef")
+    print(pd.Series(cms_qe))
+    print("step QuantileCoef")
+    print(pd.Series(rmsd_qe))
   #+END_SRC
-2. cms_qe
-   | step | Quartile coefficient of dispersion |
-   |------+------------------------------------|
-   |    0 | 0.028852966805196625,              |
-   |    1 | 0.064695226872003908,              |
-   |    2 | 0.098503633370683158,              |
-   |    3 | 0.13586522890578778,               |
-   |    4 | 0.17329037624717311                |
-3. rmsd_qe
-   | step | Quartile coefficient of dispersion |
-   |------+------------------------------------|
-   |    0 | 0.26880158781410668,               |
-   |    1 | 0.27928463951522015,               |
-   |    2 | 0.27137804188055592,               |
-   |    3 | 0.2765744229551253,                |
-   |    4 | 0.27678718835440796                |
+
+2. [X] cms_qe results
+   | step | QuantileCoef |
+   |------+--------------|
+   |    0 |     0.025457 |
+   |    1 |     0.064652 |
+   |    2 |     0.103793 |
+   |    3 |     0.134097 |
+   |    4 |     0.169521 |
+   |    5 |     0.202439 |
+   |    6 |     0.218099 |
+   |    7 |     0.248960 |
+   |   sz |     0.412429 |
+
+3. [X] rmsd_qe results
+   |------+--------------|
+   | step | QuantileCoef |
+   |------+--------------|
+   |    0 |     0.346818 |
+   |    1 |     0.296180 |
+   |    2 |     0.283607 |
+   |    3 |     0.274584 |
+   |    4 |     0.291163 |
+   |    5 |     0.288803 |
+   |    6 |     0.267812 |
+   |    7 |     0.281223 |
+   |   sz |     0.412429 |
