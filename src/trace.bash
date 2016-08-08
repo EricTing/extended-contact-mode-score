@@ -30,7 +30,8 @@ gen_conf() {
 
     conf_file=${output_dir}/${complex}_new
 
-    # -r 0.0872 <=> 5 deg
+    # generate new vectors
+    python /home/jaydy/Workspace/GitHub/extended-contact-mode-score/src/gen_vec.py > ${trace_file}
 
     cmd="\
 ${bin} \
