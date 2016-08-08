@@ -233,8 +233,8 @@ CLOSED: [2016-08-08 Mon 14:09] SCHEDULED: <2016-08-06 Sat>
 3. [X] /home/jaydy/Workspace/GitHub/geaxdock_gpu/data/trajectory.sample.out
 4. [X] /work/jaydy/working/astex/rnd_confs
 
-** DONE Calculate CMS and RMSD [4/4]
-CLOSED: [2016-08-08 Mon 14:10] DEADLINE: <2016-08-07 Sun> SCHEDULED: <2016-08-06 Sat>
+** DONE Calculate CMS and RMSD [5/5]
+CLOSED: [2016-08-08 Mon 15:01] DEADLINE: <2016-08-07 Sun> SCHEDULED: <2016-08-06 Sat>
 :LOGBOOK:
 CLOCK: [2016-08-07 Sun 18:41]--[2016-08-07 Sun 19:10] =>  0:29
 CLOCK: [2016-08-07 Sun 12:20]--[2016-08-07 Sun 12:31] =>  0:11
@@ -301,6 +301,19 @@ CLOSED: [2016-08-08 Mon 12:02]
 1. https://github.com/geaux-computational-bio/contact-mode-score/tree/benchmark-speed
 2. Time elapsed in calculating rmsd: 0.079290
 3. Time elapsed in calculating contact-based scores: 146.254927
+
+*** DONE Number of protein effective points
+CLOSED: [2016-08-08 Mon 15:00]
+1. ./dat/protein_pt_num.csv
+2. stats
+   | count |  204.000000 |
+   | mean  |  838.245098 |
+   | std   |  345.164712 |
+   | min   |  293.000000 |
+   | 25%   |  671.250000 |
+   | 50%   |  793.000000 |
+   | 75%   | 1012.000000 |
+   | max   | 1828.000000 |
 
 ** DONE Quartile coefficient of dispersion [3/3]
 CLOSED: [2016-08-08 Mon 14:11]
