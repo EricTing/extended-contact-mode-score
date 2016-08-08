@@ -31,7 +31,7 @@ run_rmsd() {
 
     echo complex $complex >> $rmsd_out
 
-    for num in 0 1 2 3 4;
+    for num in 0 1 2 3 4 5 6 7;
     do
         myconf=${conf_file}_${num}.sdf
 
@@ -69,7 +69,7 @@ run_cms() {
 
     echo complex $complex >> $cms_out
 
-    for num in 0 1 2 3 4;
+    for num in 0 1 2 3 4 5 6 7;
     do
         myconf=${conf_file}_${num}.sdf
 

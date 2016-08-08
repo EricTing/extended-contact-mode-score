@@ -1,8 +1,8 @@
 import numpy as np
 
 cols = "LigIdx PrtIdx v1 v2 v3 v4 v5 v6"
-num_perturbations = 5
-tra = 0.02
+num_perturbations = 8
+tra = 0.03
 # -r 0.0872 <=> 5 deg
 rot = 0.0872
 
