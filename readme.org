@@ -220,21 +220,21 @@ CLOSED: [2016-05-05 Thu 16:21]
    | 2yiw_YIW_A_1.pdb | 3f3u_1AW_A_1.pdb |   0.96104 | 0.420666 |  0.75643 | 0.937001 | 2.7.11.24 | 2.7.10.2    |
 
 * DONE CMS v.s. RMSD [3/3]
-CLOSED: [2016-08-07 Sun 23:06] DEADLINE: <2016-08-07 Sun>
+CLOSED: [2016-08-08 Mon 14:12] DEADLINE: <2016-08-07 Sun>
 :LOGBOOK:
 CLOCK: [2016-08-07 Sun 22:59]--[2016-08-07 Sun 23:06] =>  0:07
 CLOCK: [2016-08-07 Sun 17:25]--[2016-08-07 Sun 17:50] =>  0:25
 CLOCK: [2016-08-07 Sun 13:38]--[2016-08-07 Sun 13:49] =>  0:11
 :END:
 ** DONE Generate conformations [4/4]
-CLOSED: [2016-08-07 Sun 17:26] SCHEDULED: <2016-08-06 Sat>
+CLOSED: [2016-08-08 Mon 14:09] SCHEDULED: <2016-08-06 Sat>
 1. [X] ./src/gen_vec.py
 2. [X] ./src/trace.bash
 3. [X] /home/jaydy/Workspace/GitHub/geaxdock_gpu/data/trajectory.sample.out
 4. [X] /work/jaydy/working/astex/rnd_confs
 
-** DONE Calculate CMS and RMSD [3/3]
-CLOSED: [2016-08-07 Sun 23:06] DEADLINE: <2016-08-07 Sun> SCHEDULED: <2016-08-06 Sat>
+** DONE Calculate CMS and RMSD [4/4]
+CLOSED: [2016-08-08 Mon 14:10] DEADLINE: <2016-08-07 Sun> SCHEDULED: <2016-08-06 Sat>
 :LOGBOOK:
 CLOCK: [2016-08-07 Sun 18:41]--[2016-08-07 Sun 19:10] =>  0:29
 CLOCK: [2016-08-07 Sun 12:20]--[2016-08-07 Sun 12:31] =>  0:11
@@ -243,7 +243,7 @@ CLOCK: [2016-08-06 Sat 22:41]--[2016-08-06 Sat 23:15] =>  0:34
 :END:
 
 *** DONE Results of five perturbations [4/4]
-CLOSED: [2016-08-07 Sun 23:03]
+CLOSED: [2016-08-08 Mon 14:09]
 1. [X] ./src/cms_rmsd.bash
 2. [X] /work/jaydy/working/astex/rmsd.txt
 3. [X] /work/jaydy/working/astex/cms.txt
@@ -253,14 +253,14 @@ CLOSED: [2016-08-07 Sun 23:03]
      import pandas as pd
 
 
-     def collect2df(ifn, ofn):
+     def collect2df(ifn, ofn, num_perturbations=6):
          rmsd_dat = defaultdict(list)
          lines = open(ifn).readlines()
          for idx, line in enumerate(lines):
              if line.startswith('complex'):
                  name = line.split()[1]
-                 next_16lines = lines[idx + 1:idx + 1 + 16]
-                 for l in next_16lines:
+                 dat_lines = lines[idx + 1:idx + 1 + num_perturbations * 2]
+                 for l in dat_lines:
                      if 'value' in l:
                          rmsd_dat[name].append(float(l.split()[-1]))
 
@@ -285,19 +285,25 @@ CLOSED: [2016-08-07 Sun 23:03]
    #+END_SRC
 
 *** DONE Timing RMSD calculation on 204 * 8 conformations
-CLOSED: [2016-08-07 Sun 22:59]
-| real | 0m8.364s |
-| user | 0m2.011s |
-| sys  | 0m3.298s |
+CLOSED: [2016-08-08 Mon 02:44]
+| real | 0m17.155s |
+| user | 0m2.141s  |
+| sys  | 0m3.401s  |
 
 *** DONE Timing CMS calculation on 204 * 8 conformations
-CLOSED: [2016-08-07 Sun 22:59]
-| real | 87m11.291s |
-| user | 86m49.554s |
-| sys  | 0m14.283s  |
+CLOSED: [2016-08-08 Mon 02:44]
+| real | 89m49.616s |
+| user | 89m27.767s |
+| sys  | 0m13.856s  |
+
+*** DONE Timing the pure calculation without loading
+CLOSED: [2016-08-08 Mon 12:02]
+1. https://github.com/geaux-computational-bio/contact-mode-score/tree/benchmark-speed
+2. Time elapsed in calculating rmsd: 0.079290
+3. Time elapsed in calculating contact-based scores: 146.254927
 
 ** DONE Quartile coefficient of dispersion [3/3]
-CLOSED: [2016-08-07 Sun 23:06]
+CLOSED: [2016-08-08 Mon 14:11]
 1. [X] calculate
   #+BEGIN_SRC python
     import pandas as pd
@@ -333,26 +339,20 @@ CLOSED: [2016-08-07 Sun 23:06]
 2. [X] cms_qe results
    | step | QuantileCoef |
    |------+--------------|
-   |    0 |     0.025457 |
-   |    1 |     0.064652 |
-   |    2 |     0.103793 |
-   |    3 |     0.134097 |
-   |    4 |     0.169521 |
-   |    5 |     0.202439 |
-   |    6 |     0.218099 |
-   |    7 |     0.248960 |
-   |   sz |     0.412429 |
+   |    0 |     0.029723 |
+   |    1 |     0.062756 |
+   |    2 |     0.096295 |
+   |    3 |     0.118489 |
+   |    4 |     0.151693 |
+   |    5 |     0.160729 |
 
 3. [X] rmsd_qe results
    |------+--------------|
    | step | QuantileCoef |
    |------+--------------|
-   |    0 |     0.346818 |
-   |    1 |     0.296180 |
-   |    2 |     0.283607 |
-   |    3 |     0.274584 |
-   |    4 |     0.291163 |
-   |    5 |     0.288803 |
-   |    6 |     0.267812 |
-   |    7 |     0.281223 |
-   |   sz |     0.412429 |
+   |    0 |     0.187903 |
+   |    1 |     0.171176 |
+   |    2 |     0.157065 |
+   |    3 |     0.166310 |
+   |    4 |     0.163762 |
+   |    5 |     0.153926 |

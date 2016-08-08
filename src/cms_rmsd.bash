@@ -8,7 +8,7 @@ run_rmsd() {
     complex=$1
     dat=/work/jaydy/dat/astex
 
-    bin=/home/jaydy/Workspace/GitHub/contact-mode-score/bin/cms
+    bin=/home/jaydy/bin/cms
     input_dir=/home/jaydy/Workspace/GitHub/geaxdock_gpu/data
     parameters_dir=${input_dir}/parameters
     complex_dir=${dat}/${complex}
@@ -31,7 +31,7 @@ run_rmsd() {
 
     echo complex $complex >> $rmsd_out
 
-    for num in 0 1 2 3 4 5 6 7;
+    for num in 0 1 2 3 4 5;
     do
         myconf=${conf_file}_${num}.sdf
 
@@ -46,7 +46,7 @@ run_cms() {
     complex=$1
     dat=/work/jaydy/dat/astex
 
-    bin=/home/jaydy/Workspace/GitHub/contact-mode-score/bin/cms
+    bin=/home/jaydy/bin/cms
     input_dir=/home/jaydy/Workspace/GitHub/geaxdock_gpu/data
     parameters_dir=${input_dir}/parameters
     complex_dir=${dat}/${complex}
@@ -69,7 +69,7 @@ run_cms() {
 
     echo complex $complex >> $cms_out
 
-    for num in 0 1 2 3 4 5 6 7;
+    for num in 0 1 2 3 4 5;
     do
         myconf=${conf_file}_${num}.sdf
 
