@@ -2,12 +2,12 @@
 #######################################################################
 # Begin WQ prologue section.
 #######################################################################
-#PBS -l nodes=2:ppn=16
-#PBS -l walltime=10:00:00
+#PBS -l nodes=6:ppn=16
+#PBS -l walltime=72:00:00
 ##PBS -A hpc_lasigma
 #PBS -q workq
 ##PBS -q lasigma
-#PBS -N vina_biolip
+#PBS -N biolip
 #PBS -o /ddnB/work/jaydy/working
 
 # Things that should be customized, carefully of course.
@@ -30,7 +30,7 @@ if [ ! -f ${WORKDIR}/wq.py ]; then
 fi
 
 FILES=${WORKDIR}/biolipbiolip_sampled_2.txt
-TASK=${WORKDIR}/vina_predict_biolip.py
+TASK=${WORKDIR}/biolip_query_biolip.py
 
 
 START=1

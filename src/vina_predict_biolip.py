@@ -300,13 +300,13 @@ def main(name):
     luigi.build(
         [
             # VinaPredictBiolipStructure(name),
-            VinaResultAccuracy(name),
+            # VinaResultAccuracy(name),
             # QueryVinaResultOnBioLip(name),
-            # QueryVinaResultOnBioLipFixedPocket(name),
+            QueryVinaResultOnBioLipFixedPocket(name),
             # VinaRandomizeBiolipStructure(name),
-            # QueryVinaRandomResultOnBioLipFixedPocket(name),
-            VinaRandomAccuracy(name),
-            QueryVinaResultOnIdenticalTemplate(name),
+            QueryVinaRandomResultOnBioLipFixedPocket(name),
+            # VinaRandomAccuracy(name),
+            # QueryVinaResultOnIdenticalTemplate(name),
         ],
         local_scheduler=True)
     pass
