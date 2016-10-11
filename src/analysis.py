@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import random
-import matplotlib
 import json
 import os
 import luigi
@@ -15,12 +14,48 @@ import matplotlib.pyplot as plt
 
 from sklearn import metrics
 from pprint import pprint
+from glob import glob
 
 from vina_predict_biolip import QueryVinaResultOnBioLipFixedPocket
 from vina_predict_biolip import QueryVinaRandomResultOnBioLipFixedPocket
 
 SAMPLED_LIST = "../dat/biolipbiolip_sampled_2.txt"
-SAMPLED_NAMES = [_.rstrip() for _ in file(SAMPLED_LIST)]
+
+
+class SampleValidLigs(luigi.Task):
+    """sample the ligands with the corresponding protein pdbqt file existed
+    """
+
+    def output(self):
+        p = SAMPLED_LIST
+        return luigi.LocalTarget(p)
+
+    @property
+    def sml_ligand_nr(self):
+        return "/work/jaydy/dat/BioLip/sml_ligand_nr"
+
+    def run(self):
+        pdbs = glob(self.sml_ligand_nr + "/*/*.pdb")
+        assert len(pdbs) == 93698
+
+        ligs_with_prt_pdbqt_existed = []
+
+        for pdb in pdbs:
+            lig_pdb = os.path.basename(pdb)
+            vina_task = QueryVinaRandomResultOnBioLipFixedPocket(
+                lig_pdb).requires()
+            prt_pdbqt = vina_task.prtPdbqt
+            if os.path.exists(vina_task.prtPdbqt):
+                ligs_with_prt_pdbqt_existed.append(lig_pdb)
+
+        with open(self.output().path, 'w') as ofs:
+            num_sampled = 3000
+            if len(ligs_with_prt_pdbqt_existed) > num_sampled:
+                sampled = random.sample(ligs_with_prt_pdbqt_existed,
+                                        num_sampled)
+            else:
+                sampled = ligs_with_prt_pdbqt_existed
+            ofs.write("\n".join(sampled))
 
 
 def read2Df(result, task_name):
@@ -37,7 +72,7 @@ class Read(luigi.Task):
 
     def run(self):
         sampled_df = pd.DataFrame()
-        for name in SAMPLED_NAMES:
+        for name in [_.rstrip() for _ in file(SAMPLED_LIST)]:
             task = biolip_query_biolip.BioLipBioLip(name)
             if task.complete():
                 with task.output().open('r') as ifs:
@@ -85,7 +120,7 @@ class CuttedVinaPredictBioLip(luigi.Task):
 
     def check(self):
         completes, incompletes = [], []
-        for name in SAMPLED_NAMES:
+        for name in [_.rstrip() for _ in file(SAMPLED_LIST)]:
             task = vina_predict_biolip.QueryVinaResultOnBioLip(name)
             if task.complete():
                 completes.append(name)
@@ -112,7 +147,7 @@ class CuttedVinaPredictBioLip(luigi.Task):
 class VinaPredictBioLipFixed(luigi.Task):
     def check(self):
         completes, incompletes = [], []
-        for name in SAMPLED_NAMES:
+        for name in [_.rstrip() for _ in file(SAMPLED_LIST)]:
             task = QueryVinaResultOnBioLipFixedPocket(name)
             if task.complete():
                 completes.append(name)
@@ -140,7 +175,7 @@ class VinaPredictBioLipFixed(luigi.Task):
 class VinaRandomizedBioLipFixed(VinaPredictBioLipFixed):
     def check(self):
         completes, incompletes = [], []
-        for name in SAMPLED_NAMES:
+        for name in [_.rstrip() for _ in file(SAMPLED_LIST)]:
             task = QueryVinaRandomResultOnBioLipFixedPocket(name)
             if task.complete():
                 completes.append(name)
@@ -205,7 +240,7 @@ class CheckVinaResultAccuracy(luigi.Task):
 
     def check(self):
         completes, incompletes = [], []
-        for name in SAMPLED_NAMES:
+        for name in [_.rstrip() for _ in file(SAMPLED_LIST)]:
             task = vina_predict_biolip.VinaResultAccuracy(name)
             if task.complete():
                 completes.append(name)
@@ -241,7 +276,7 @@ class CheckVinaResultAgainstIdenticalSystems(luigi.Task):
 
     def check(self):
         completes, incompletes = [], []
-        for name in SAMPLED_NAMES:
+        for name in [_.rstrip() for _ in file(SAMPLED_LIST)]:
             task = vina_predict_biolip.QueryVinaResultOnIdenticalTemplate(name)
             if task.complete():
                 completes.append(name)
@@ -271,7 +306,7 @@ class CheckVinaRandomRmsd(luigi.Task):
 
     def check(self):
         completes, incompletes = [], []
-        for name in SAMPLED_NAMES:
+        for name in [_.rstrip() for _ in file(SAMPLED_LIST)]:
             task = vina_predict_biolip.VinaRandomAccuracy(name)
             if task.complete():
                 completes.append(name)
@@ -309,8 +344,8 @@ def clean(df):
         'query'].unique().size, df.shape[0]))
     # different systems
     df = df[(df.seq_identity < 0.9) & (df.Tc < 0.9)]
-    print("{} queries after filtering same systems".format(df['query'].unique(
-    ).size))
+    print("{} queries after filtering same systems".format(df['query'].unique()
+                                                           .size))
     # drop nan
     df = df.dropna()
     print("{} queries after droping nan".format(df['query'].unique().size))
@@ -347,8 +382,8 @@ def preprocess(df):
     df = similarPocketsLigands(df.copy())
     # pprint(df.describe())
     print("%.3f of the spearmanr > 0" % ratio(df.spearmanr))
-    print("%.3f of the p-value < 0.05" % ratio(df[df.spearmanr > 0]['pval'],
-                                               filter_fn=lambda x: x < 0.05))
+    print("%.3f of the p-value < 0.05" % ratio(
+        df[df.spearmanr > 0]['pval'], filter_fn=lambda x: x < 0.05))
     print("\n")
     return df
 
@@ -357,8 +392,8 @@ def loadData():
     """find the shared templates
     """
     print("loading random conformation querying biolip ...")
-    rnd_df = pd.read_csv(VinaRandomizedBioLipFixed().output().path,
-                         index_col=0)
+    rnd_df = pd.read_csv(
+        VinaRandomizedBioLipFixed().output().path, index_col=0)
 
     print("loading native structures in biolip querying biolip ...")
     df = pd.read_csv(Read().output().path, index_col=0)
@@ -368,17 +403,19 @@ def loadData():
 
     print("merge to find shared queries and templates ...")
     merged_on = ["query", "template"]
-    shared_queries_templates = pd.merge(df[merged_on],
-                                        fixed_df[merged_on],
-                                        on=merged_on,
-                                        how="inner")
+    shared_queries_templates = pd.merge(
+        df[merged_on], fixed_df[merged_on], on=merged_on, how="inner")
 
-    shared_queries_templates = pd.merge(rnd_df[merged_on],
-                                        shared_queries_templates[merged_on],
-                                        on=merged_on,
-                                        how="inner")
-
+    shared_queries_templates = pd.merge(
+        rnd_df[merged_on],
+        shared_queries_templates[merged_on],
+        on=merged_on,
+        how="inner")
+    uniq_queries = shared_queries_templates["query"].unique()
+    print("num of unique queries {}".format(uniq_queries.shape[0]))
     num_sampled = 2000
+    if num_sampled > uniq_queries.shape[0]:
+        num_sampled = uniq_queries.shape[0]
     print("sample %d queries" % num_sampled)
     sampled_queries = random.sample(shared_queries_templates["query"].unique(),
                                     num_sampled)
@@ -452,9 +489,8 @@ def analysis():
         def calculateAUC(scores):
             scores["native_like"] = scores.rmsd.apply(
                 lambda r: 1 if r < 3 else 0)
-            fpr, tpr, thresholds = metrics.roc_curve(scores.native_like,
-                                                     scores.spearmanr,
-                                                     pos_label=1)
+            fpr, tpr, thresholds = metrics.roc_curve(
+                scores.native_like, scores.spearmanr, pos_label=1)
             return metrics.auc(fpr, tpr)
 
         '''
@@ -503,8 +539,10 @@ def analysis():
         print
         pprint(ranked_spearmanr.corr())
         print
-        pprint(pd.Series(minepy.minestats(ranked_spearmanr.rmsd,
-                                          ranked_spearmanr.spearmanr)))
+        pprint(
+            pd.Series(
+                minepy.minestats(ranked_spearmanr.rmsd,
+                                 ranked_spearmanr.spearmanr)))
         # ranked_spearmanr.plot(kind='scatter', x='rmsd', y="spearmanr")
         # plt.savefig('rmsd_ranked_spearmanr.png')
 
@@ -515,6 +553,25 @@ def analysis():
     comparedWithRmsd(rnd_rmsd_xcms[rnd_rmsd_xcms["TM-score"] < 0.5])
 
 
+class GrepError(luigi.Task):
+
+    path = luigi.Parameter()
+
+    def output(self):
+        p = self.path + ".grep_error.txt"
+        return luigi.LocalTarget(p)
+
+    def run(self):
+        error_lines = []
+        with open(self.path, 'r') as ifs:
+            for line in ifs:
+                if "Error" in line:
+                    error_lines.append(line)
+
+        with open(self.output().path, 'w') as ofs:
+            ofs.writelines(error_lines)
+
+
 if __name__ == "__main__":
     luigi.build(
         [
@@ -522,11 +579,13 @@ if __name__ == "__main__":
             # CutRedundancy(),
             # CuttedVinaPredictBioLip(),
             # UnCuttedVinaPredictBioLip(),
-            CheckVinaResultAccuracy(),
+            # CheckVinaResultAccuracy(),
             VinaPredictBioLipFixed(),
             VinaRandomizedBioLipFixed(),
-            CheckVinaRandomRmsd(),
+            # CheckVinaRandomRmsd(),
             CheckVinaResultAgainstIdenticalSystems(),
             # CuttedVinaPredictBioLipFixed(),
+            # GrepError("/ddnB/work/jaydy/working/biolip.o548667")
+            # SampleValidLigs()
         ],
         local_scheduler=True)

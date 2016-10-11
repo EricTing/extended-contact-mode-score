@@ -42,7 +42,10 @@ class VinaPredictBiolipStructure(biolip_query_biolip.Path):
             lig.write('sdf', self.lig_sdf, overwrite=True)
 
     def output(self):
-        self.prepareInputFiles()
+        try:
+            self.prepareInputFiles()
+        except Exception:
+            pass
         path = self.lig_pdbqt + '.vina.pdbqt'
         return luigi.LocalTarget(path)
 
@@ -306,7 +309,7 @@ def main(name):
             # VinaRandomizeBiolipStructure(name),
             QueryVinaRandomResultOnBioLipFixedPocket(name),
             # VinaRandomAccuracy(name),
-            # QueryVinaResultOnIdenticalTemplate(name),
+            QueryVinaResultOnIdenticalTemplate(name),
         ],
         local_scheduler=True)
     pass

@@ -10,14 +10,14 @@ import numpy as np
 from biolip import BioLipReferencedSpearmanR
 from collections import defaultdict
 
-BIOLIP_LIGS_SDF = "/ddnB/work/jaydy/dat/BioLip/ligand_nr.sdf"
-OUTPUT_DIR = "/ddnB/work/jaydy/working/biolipbiolip/"
+BIOLIP_LIGS_SDF = "/work/jaydy/dat/BioLip/ligand_nr.sdf"
+OUTPUT_DIR = "/work/jaydy/working/biolipbiolip/"
 
 
 class Path(luigi.Task):
     lig_pdb = luigi.Parameter()
     prt_dir = luigi.Parameter(default="/work/jaydy/dat/BioLip/prt/")
-    lig_dir = luigi.Parameter(default="/ddnB/work/jaydy/dat/BioLip/ligand_nr/")
+    lig_dir = luigi.Parameter(default="/work/jaydy/dat/BioLip/ligand_nr/")
 
     @property
     def lig_code(self):
@@ -26,7 +26,7 @@ class Path(luigi.Task):
     @property
     def pdbqt_dir(self):
         return os.path.join(
-            "/ddnB/work/jaydy/dat/BioLip/prt_pdbqt/",
+            "/work/jaydy/dat/BioLip/prt_pdbqt/",
             self.mid_two,
         )
 
@@ -35,7 +35,7 @@ class Path(luigi.Task):
         pdbqt = self.lig_pdb.split(
             '_')[0] + self.lig_pdb.split('_')[2] + ".pdbqt"
         path = os.path.join(
-            "/ddnB/work/jaydy/dat/BioLip/prt_pdbqt/",
+            "/work/jaydy/dat/BioLip/prt_pdbqt/",
             self.mid_two,
             pdbqt
         )
@@ -66,7 +66,7 @@ class Cluster(luigi.Task):
     def run(self):
         mols = list(pybel.readfile('sdf', BIOLIP_LIGS_SDF))
         # mols = list(pybel.readfile('sdf',
-        #                            "/ddnB/work/jaydy/dat/BioLip/sml_ligand_nr/a5.sdf"))
+        #                            "/work/jaydy/dat/BioLip/sml_ligand_nr/a5.sdf"))
 
         def calMat(mols):
             fps = [mol.calcfp('maccs') for mol in mols]
