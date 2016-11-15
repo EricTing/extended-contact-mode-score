@@ -5,7 +5,7 @@ import luigi
 import os
 import pandas as pd
 from collections import defaultdict
-from dude_vina import SpearmanR
+from dude_vina import SpearmanR, BioLipSpearmanR
 
 
 class CollectDudeVinaSpearmanR(luigi.Task):
@@ -42,12 +42,31 @@ class CollectDudeVinaSpearmanR(luigi.Task):
         total_df.to_csv(ofn)
 
 
+class CollectDudeVinaBioLipSpearmanR(CollectDudeVinaSpearmanR):
+    def run(self):
+        pass
+
+    def check(self):
+        for task_name in self.getTaskNames():
+            try:
+                task = BioLipSpearmanR(task_name,
+                                       'output-crystal-active-mod-optimal')
+                if not task.complete():
+                    print task_name, "TO-DO"
+                else:
+                    print task_name, "Done"
+            except Exception as detail:
+                print detail
+
+
 def main():
     luigi.build([
-        CollectDudeVinaSpearmanR()
+        # CollectDudeVinaSpearmanR()
     ],
                 local_scheduler=True)
-    pass
+
+    collect_biolip_spearmanr = CollectDudeVinaBioLipSpearmanR()
+    collect_biolip_spearmanr.check()
 
 
 if __name__ == '__main__':

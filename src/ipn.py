@@ -150,6 +150,7 @@ def main():
 
     plt.figure()
     fixed_spearmanr.spearmanr.hist(bins=30, color='darkgrey', alpha=0.9)
+    fixed_spearmanr.spearmanr.to_csv("/work/jaydy/working/xcms_plot/predict_xcms_hist.csv")
     plt.xlabel("XCMS")
     plt.savefig("/work/jaydy/working/xcms_plot/predict_xcms_hist.tiff",
                 dpi=200)
@@ -164,6 +165,7 @@ def main():
 
     plt.figure()
     rnd_spearmanr.spearmanr.hist(bins=30, color='darkgrey', alpha=0.9)
+    rnd_spearmanr.spearmanr.to_csv("/work/jaydy/working/xcms_plot/random_xcms_hist.csv")
     plt.xlabel("XCMS")
     plt.savefig("/work/jaydy/working/xcms_plot/random_xcms_hist.tiff", dpi=200)
 
@@ -353,6 +355,9 @@ def main():
                 alpha=0.3,
                 c='k')
 
+    print("{} cms values\n{} rmsd values".format(
+        len(fixed_spearmanr['cms']), len(fixed_spearmanr['rmsd'])))
+
     ax1.set_xlabel("CMS", fontsize=24)
     ax1.set_ylabel("RMSD [$\mathrm{\AA}$]", fontsize=24)
     ax1.set_xlim((0, 1))
@@ -379,6 +384,20 @@ def main():
              transform=ax2.transAxes,
              fontsize=30,
              style='normal')
+
+    same_query_predicted_df = predicted_df[predicted_df['query'].isin(
+        fixed_spearmanr.index)]
+    same_query_fixed_spearmanr = fixed_spearmanr[fixed_spearmanr.index.isin(
+        same_query_predicted_df['query'])]
+
+    print("{} cms values\n{} xcms values".format(
+        len(sampled_predicted_df['cms']), len(sampled_predicted_df[
+            'spearmanr'])))
+
+    same_query_predicted_df[['query', 'cms', 'spearmanr']].to_csv(
+        "/work/jaydy/working/xcms_plot/cms_xcms.csv")
+    same_query_fixed_spearmanr[['cms', 'rmsd']].to_csv(
+        "/work/jaydy/working/xcms_plot/cms_rmsd.csv")
 
     fig.tight_layout()
     fig.savefig("/work/jaydy/working/xcms_plot/cms_rmsd_xcms_scatter.tiff",
@@ -441,6 +460,12 @@ def main():
     ax.yaxis.grid(True)
     ax.set_ylabel('RMSD [$\mathrm{\AA}$]', fontsize=24)
 
+    predicted_rmsd['rmsd'].to_csv(
+        "/work/jaydy/working/xcms_plot/vina_rmsd.csv",
+        index=False)
+    rnd_rmsd['rmsd'].to_csv("/work/jaydy/working/xcms_plot/random_rmsd.csv",
+                            index=False)
+
     ax.text(-0.5,
             0.95,
             'A',
@@ -461,6 +486,11 @@ def main():
     ax.yaxis.grid(True)
     ax.set_ylabel('CMS', fontsize=24)
 
+    predicted_rmsd['cms'].to_csv("/work/jaydy/working/xcms_plot/vina_cms.csv",
+                                 index=False)
+    rnd_rmsd['cms'].to_csv("/work/jaydy/working/xcms_plot/random_cms.csv",
+                           index=False)
+
     fake_handles = [mpatches.Patch(color='dimgrey'),
                     mpatches.Patch(color='lightgrey')]
     ax.legend(fake_handles, ['AutoDock Vina', 'Random'],
@@ -468,8 +498,7 @@ def main():
               frameon=False,
               fontsize='small',
               bbox_to_anchor=(0.5, -0.05),
-              ncol=2
-    )
+              ncol=2)
 
     ax.text(-0.5,
             0.95,
@@ -491,6 +520,12 @@ def main():
     ax.yaxis.grid(True)
     ax.set_ylabel('XCMS', fontsize=24)
 
+    fixed_spearmanr['spearmanr'].to_csv(
+        "/work/jaydy/working/xcms_plot/vina_xcms.csv",
+        index=False)
+    rnd_spearmanr['spearmanr'].to_csv(
+        "/work/jaydy/working/xcms_plot/random_xcms.csv",
+        index=False)
 
     ax.text(-0.5,
             0.95,
